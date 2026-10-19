@@ -2,7 +2,8 @@
 const SUPABASE_URL = 'https://mbypfeifkyrisnqjfpbq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XUPp_IwZKgpFv9MTJwHBSg_DNlba5VE';  // ← ここを変更してください
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const { createClient } = window.supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let tempChart, humidityChart;
 
