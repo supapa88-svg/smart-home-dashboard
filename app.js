@@ -1,9 +1,9 @@
 // Supabase設定
 const SUPABASE_URL = 'https://mbypfeifkyrisnqjfpbq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_XUPp_IwZKgpFv9MTJwHBSg_DNlba5VE';  // ← ここを変更してください
+const SUPABASE_KEY = 'sb_publishable_XUPp_IwZKgpFv9MTJwHBSg_DNlba5VE';  // ← ここを実際のキーに変更
 
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Supabaseクライアント初期化
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let tempChart, humidityChart;
 
@@ -61,7 +61,7 @@ async function init() {
 // 現在のデータ読み込み
 async function loadCurrentData() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('sensor_data')
             .select('*')
             .not('indoor_temp', 'is', null)
@@ -102,7 +102,7 @@ async function loadCharts() {
         const now = new Date();
         const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('sensor_data')
             .select('*')
             .not('indoor_temp', 'is', null)
