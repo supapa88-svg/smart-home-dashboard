@@ -42,19 +42,19 @@ async function scrapeOctopusEnergy() {
         console.log('Navigating to Octopus Energy login page...');
         
         // ログインページに移動
-        await page.goto('https://octopus.energy/login/', {
-            waitUntil: 'networkidle2',
-            timeout: 60000
+        await page.goto('https://octopusenergy.co.jp/login', {
+            waitUntil: 'domcontentloaded',
+            timeout: 120000
         });
         
         // ログインフォームを待機
-        await page.waitForSelector('input[type="email"]', { timeout: 30000 });
+        await page.waitForSelector('input[id="email"]', { timeout: 30000 });
         
         console.log('Logging in...');
         
         // メールアドレスとパスワードを入力
-        await page.type('input[type="email"]', OCTOPUS_EMAIL);
-        await page.type('input[type="password"]', OCTOPUS_PASSWORD);
+        await page.type('input[id="email"]', OCTOPUS_EMAIL);
+        await page.type('input[id="password"]', OCTOPUS_PASSWORD);
         
         // ログインボタンをクリック
         await Promise.all([
@@ -66,9 +66,9 @@ async function scrapeOctopusEnergy() {
         
         // 使用量ページに移動
         console.log('Navigating to usage page...');
-        await page.goto('https://octopus.energy/dashboard/new/accounts/usage/', {
-            waitUntil: 'networkidle2',
-            timeout: 60000
+        await page.goto('https://octopusenergy.co.jp/dashboard/new/accounts/usage/', {
+            waitUntil: 'domcontentloaded',
+            timeout: 120000
         });
         
         // ページが読み込まれるまで待機
