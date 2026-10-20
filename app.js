@@ -116,30 +116,34 @@ async function loadCharts() {
             return;
         }
         
-        // データを日本時間のDateオブジェクトに変換
-        const chartData = data.map(d => {
-            const utcDate = new Date(d.created_at);
-            // 日本時間に変換（UTC+9時間）
-            const jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
-            return {
-                time: jstDate,
-                indoor_temp: d.indoor_temp,
-                indoor_humidity: d.indoor_humidity,
-                outdoor_temp: d.outdoor_temp,
-                outdoor_humidity: d.outdoor_humidity
-            };
-        });
-        
-        // 最新データの時刻を上回る正時を計算
-        const latestTime = new Date(Math.max(...chartData.map(d => d.time)));
-        const maxTime = new Date(latestTime);
-        maxTime.setMinutes(0, 0, 0);
-        if (latestTime.getMinutes() > 0 || latestTime.getSeconds() > 0) {
-            maxTime.setHours(maxTime.getHours() + 1);
-        }
-        
-        // 最小値 = 最大値 - 24時間
-        const minTime = new Date(maxTime.getTime() - 24 * 60 * 60 * 1000);
+// データをそのまま使用（UTCのまま）
+const chartData = data.map(d => ({
+    time: new Date(d.created_at),
+    indoor_temp: d.indoor_temp,
+    indoor_humidity: d.indoor_humidity,
+    outdoor_temp: d.outdoor_temp,
+    outdoor_humidity: d.outdoor_humidity
+}));
+
+// 最新データの時刻（UTC）
+const latestTime = new Date(Math.max(...chartData.map(d => d.time)));
+
+// 日本時間で次の正時を計算
+// UTCに9時間足して日本時間にする
+const latestTimeJST = new Date(latestTime.getTime() + 9 * 60 * 60 * 1000);
+
+// 次の正時（日本時間）
+const maxTimeJST = new Date(latestTimeJST);
+maxTimeJST.setUTCMinutes(0, 0, 0);
+if (latestTimeJST.getUTCMinutes() > 0 || latestTimeJST.getUTCSeconds() > 0) {
+    maxTimeJST.setUTCHours(maxTimeJST.getUTCHours() + 1);
+}
+
+// UTCに戻す（9時間引く）
+const maxTime = new Date(maxTimeJST.getTime() - 9 * 60 * 60 * 1000);
+
+// 最小値 = 最大値 - 24時間
+const minTime = new Date(maxTime.getTime() - 24 * 60 * 60 * 1000);
         
         // 温度グラフ
         if (tempChart) tempChart.destroy();
