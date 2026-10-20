@@ -51,23 +51,33 @@
         .card {
             background: white;
             border-radius: 15px;
-            padding: 15px;  /* 25px → 20px に縮小 */
+            padding: 25px;  /* 元に戻す */
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             transition: transform 0.3s ease;
-            max-width: 240px;  /* 最大幅を制限 */
         }
-        
+
+/* 現在値カード専用（小さいサイズ） */
+        .card.compact {
+            padding: 20px;
+            max-width: 280px;
+        }        
         .card:hover {
             transform: translateY(-5px);
         }
         
         .card h2 {
             color: #667eea;
-            margin-bottom: 15px;  /* 20px → 15px */
-            font-size: 1.1em;     /* 1.3em → 1.1em に縮小 */
+            margin-bottom: 20px;  /* 元に戻す */
+            font-size: 1.3em;     /* 元に戻す */
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+/* 現在値カード専用（小さい見出し） */
+        .card.compact h2 {
+            margin-bottom: 15px;
+            font-size: 1.1em;
         }
         
         .metric {
@@ -90,7 +100,12 @@
         .metric-value {
             font-weight: bold;
             color: #333;
-            font-size: 1.3em;  /* 1.8em → 1.5em に縮小 */
+            font-size: 1.8em;  /* 元に戻す */
+        }
+
+/* 現在値カード専用（小さいフォント） */
+        .card.compact .metric-value {
+            font-size: 1.5em;
         }
         
         .metric-value.temp {
@@ -152,7 +167,7 @@
         
         <div id="dashboard" class="dashboard" style="display: none;">
             <!-- 室内 -->
-            <div class="card">
+        <div class="card compact">
                 <h2>🏠 室内</h2>
                 <div class="metric">
                     <span class="metric-label">温度</span>
@@ -165,7 +180,7 @@
             </div>
             
             <!-- 屋外 -->
-            <div class="card">
+            <div class="card compact">
                 <h2>🌤️ 屋外（ベランダ）</h2>
                 <div class="metric">
                     <span class="metric-label">温度</span>
