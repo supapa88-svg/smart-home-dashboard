@@ -133,7 +133,7 @@ async function loadCharts() {
                         data: data.map(d => d.indoor_temp),
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                        tension: 0.4,
+                        tension: 0,
                         fill: true
                     },
                     {
@@ -141,7 +141,7 @@ async function loadCharts() {
                         data: data.map(d => d.outdoor_temp),
                         borderColor: 'rgb(54, 162, 235)',
                         backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0.4,
+                        tension: 0,
                         fill: true
                     }
                 ]
@@ -191,7 +191,7 @@ async function loadCharts() {
                         data: data.map(d => d.indoor_humidity),
                         borderColor: 'rgb(78, 205, 196)',
                         backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                        tension: 0.4,
+                        tension: 0,
                         fill: true
                     },
                     {
@@ -199,7 +199,7 @@ async function loadCharts() {
                         data: data.map(d => d.outdoor_humidity),
                         borderColor: 'rgb(255, 159, 64)',
                         backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                        tension: 0.4,
+                        tension: 0,
                         fill: true
                     }
                 ]
