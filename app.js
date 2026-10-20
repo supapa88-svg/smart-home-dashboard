@@ -146,35 +146,83 @@ async function loadCharts() {
                     }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '°C';
-                            }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
+options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'top',
+        },
+        tooltip: {
+            mode: 'index',
+            intersect: false,
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: false,
+            min: function(context) {
+                // データから最小値を取得
+                const allData = [
+                    ...context.chart.data.datasets[0].data,
+                    ...context.chart.data.datasets[1].data
+                ].filter(v => v !== null && v !== undefined);
+                
+                if (allData.length === 0) return 0;
+                
+                const dataMin = Math.min(...allData);
+                const dataMax = Math.max(...allData);
+                
+                // 最小値を下回る整数
+                let min = Math.floor(dataMin);
+                // 最大値を上回る整数
+                let max = Math.ceil(dataMax);
+                
+                // 差が10℃未満なら、最大値を最小値+10℃に
+                if (max - min < 10) {
+                    max = min + 10;
+                }
+                
+                return min;
+            },
+            max: function(context) {
+                // データから最大値を取得
+                const allData = [
+                    ...context.chart.data.datasets[0].data,
+                    ...context.chart.data.datasets[1].data
+                ].filter(v => v !== null && v !== undefined);
+                
+                if (allData.length === 0) return 10;
+                
+                const dataMin = Math.min(...allData);
+                const dataMax = Math.max(...allData);
+                
+                // 最小値を下回る整数
+                let min = Math.floor(dataMin);
+                // 最大値を上回る整数
+                let max = Math.ceil(dataMax);
+                
+                // 差が10℃未満なら、最大値を最小値+10℃に
+                if (max - min < 10) {
+                    max = min + 10;
+                }
+                
+                return max;
+            },
+            ticks: {
+                callback: function(value) {
+                    return value + '°C';
                 }
             }
+        },
+        x: {
+            ticks: {
+                maxRotation: 45,
+                minRotation: 45
+            }
+        }
+    }
+} 
         });
         
         // 湿度グラフ
