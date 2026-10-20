@@ -169,12 +169,33 @@ async function scrapeOctopusEnergy() {
         
         // すべてのトグルボタンを取得して「日」を探す
         await page.waitForSelector('button[data-part="toggle-button-option"]', { timeout: 30000 });
-
         
-        const dayButton = await page.evaluateHandle(() => {
+        // JavaScriptで直接クリック（より確実）
+        const dayButtonClicked = await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button[data-part="toggle-button-option"]'));
-            return buttons.find(button => button.textContent.trim() === '日');
+            const dayButton = buttons.find(button => button.textContent.trim() === '日');
+            
+            if (dayButton) {
+                console.log('Found day button, clicking...');
+                dayButton.click();
+                return true;
+            } else {
+                console.log('Day button not found');
+                return false;
+            }
         });
+        
+        if (!dayButtonClicked) {
+            throw new Error('Day tab not found');
+        }
+        
+        console.log('Day tab clicked');
+        
+        // クリック後、データ読み込みを待機
+        await page.waitForTimeout(5000);
+        
+        // ページのURLやタイトルを再確認
+        console.log(`After day tab click - URL: ${page.url()}`);
         
         // テーブル表示に切り替え（もしグラフ表示の場合）
         try {
@@ -191,7 +212,19 @@ async function scrapeOctopusEnergy() {
         
         // テーブルが表示されるまで待機
         console.log('Waiting for table to appear...');
-        await page.waitForSelector('tr[data-part="table-row"]', { timeout: 30000 });
+        
+        try {
+            await page.waitForSelector('tr[data-part="table-row"]', { timeout: 60000 });
+            console.log('Table found!');
+        } catch (e) {
+            console.log('Table not found after 60 seconds');
+            
+            // デバッグ：ページのHTMLを確認
+            const bodyHTML = await page.evaluate(() => document.body.innerHTML);
+            console.log('Page HTML (first 2000 chars):', bodyHTML.substring(0, 2000));
+            
+            throw new Error('Table rows not found on the page');
+        }
         
         // さらに少し待機（データ読み込み完了を確実に）
         await page.waitForTimeout(3000);
