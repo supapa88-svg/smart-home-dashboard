@@ -51,9 +51,10 @@
         .card {
             background: white;
             border-radius: 15px;
-            padding: 25px;
+            padding: 15px;  /* 25px → 20px に縮小 */
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             transition: transform 0.3s ease;
+            max-width: 240px;  /* 最大幅を制限 */
         }
         
         .card:hover {
@@ -62,8 +63,8 @@
         
         .card h2 {
             color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.3em;
+            margin-bottom: 15px;  /* 20px → 15px */
+            font-size: 1.1em;     /* 1.3em → 1.1em に縮小 */
             display: flex;
             align-items: center;
             gap: 10px;
@@ -73,7 +74,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
+            padding: 10px 0;
             border-bottom: 1px solid #f0f0f0;
         }
         
@@ -89,7 +90,7 @@
         .metric-value {
             font-weight: bold;
             color: #333;
-            font-size: 1.8em;
+            font-size: 1.3em;  /* 1.8em → 1.5em に縮小 */
         }
         
         .metric-value.temp {
