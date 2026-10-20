@@ -191,8 +191,9 @@ async function scrapeOctopusEnergy() {
         
         console.log('Day tab clicked');
         
-        // クリック後、データ読み込みを待機
-        await page.waitForTimeout(5000);
+        // クリック後、データ読み込みを待機（延長）
+        console.log('Waiting for data to load after day tab click...');
+        await page.waitForTimeout(15000);  // 5秒 → 15秒に延長
         
         // ページのURLやタイトルを再確認
         console.log(`After day tab click - URL: ${page.url()}`);
@@ -209,6 +210,10 @@ async function scrapeOctopusEnergy() {
         } catch (e) {
             console.log('Already in table view or button not found');
         }
+        
+        // さらに待機（JavaScriptの実行完了を待つ）
+        console.log('Waiting for JavaScript to finish rendering...');
+        await page.waitForTimeout(10000);
         
         // テーブルが表示されるまで待機
         console.log('Waiting for table to appear...');
