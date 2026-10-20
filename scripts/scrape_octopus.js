@@ -53,14 +53,44 @@ async function scrapeOctopusEnergy() {
         console.log('Logging in...');
         
         // メールアドレスとパスワードを入力
-        await page.type('input[id="email"]', OCTOPUS_EMAIL);
-        await page.type('input[id="password"]', OCTOPUS_PASSWORD);
+        await page.type('input[id="email"]', OCTOPUS_EMAIL, { delay: 100 });
+        await page.waitForTimeout(1000);
+        await page.type('input[id="password"]', OCTOPUS_PASSWORD, { delay: 100 });
+        await page.waitForTimeout(1000);
+        
+        console.log('Clicking login button...');
         
         // ログインボタンをクリック
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
-            page.click('button[type="submit"]')
-        ]);
+        await page.click('button[type="submit"]');
+        
+        // ナビゲーション完了を待つ（より長いタイムアウト）
+        console.log('Waiting for navigation...');
+        try {
+            await page.waitForNavigation({ 
+                waitUntil: 'networkidle2', 
+                timeout: 120000 
+            });
+        } catch (e) {
+            console.log('Navigation timeout, checking current URL...');
+        }
+        
+        await page.waitForTimeout(5000);
+        
+        // ログイン後のURLを確認
+        const afterLoginUrl = page.url();
+        console.log(`After login URL: ${afterLoginUrl}`);
+        
+        // ログインページにリダイレクトされていないか確認
+        if (afterLoginUrl.includes('/login')) {
+            // スクリーンショットを保存（デバッグ用）
+            await page.screenshot({ path: '/tmp/login-failed.png' });
+            
+            // ページ内容を確認
+            const pageContent = await page.content();
+            console.log('Page content (first 500 chars):', pageContent.substring(0, 500));
+            
+            throw new Error(`Login failed: Still on login page. URL: ${afterLoginUrl}`);
+        }
         
         console.log('Logged in successfully');
         
