@@ -66,7 +66,7 @@ async function scrapeOctopusEnergy() {
         
         // 使用量ページに移動
         console.log('Navigating to usage page...');
-        await page.goto('https://octopusenergy.co.jp/dashboard/new/accounts/usage/', {
+        await page.goto('https://octopusenergy.co.jp/account/A-308611DA/usage', {
             waitUntil: 'domcontentloaded',
             timeout: 120000
         });
@@ -76,10 +76,14 @@ async function scrapeOctopusEnergy() {
         
         // 「日」タブをクリック
         console.log('Selecting day view...');
-        const dayTabSelector = 'button[data-testid="day-tab"], button:has-text("日")';
-        await page.waitForSelector(dayTabSelector, { timeout: 30000 });
-        await page.click(dayTabSelector);
-        await page.waitForTimeout(3000);
+        
+        // すべてのトグルボタンを取得して「日」を探す
+        await page.waitForSelector('button[data-part="toggle-button-option"]', { timeout: 30000 });
+        
+        const dayButton = await page.evaluateHandle(() => {
+            const buttons = Array.from(document.querySelectorAll('button[data-part="toggle-button-option"]'));
+            return buttons.find(button => button.textContent.trim() === '日');
+        });
         
         // テーブル表示に切り替え（もしグラフ表示の場合）
         try {
