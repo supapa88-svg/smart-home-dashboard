@@ -23,7 +23,7 @@ async function scrapeOctopusEnergy() {
     console.log('Starting Octopus Energy scraping...');
     
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: '/snap/bin/chromium',
         headless: 'new',
         args: [
             '--no-sandbox',
