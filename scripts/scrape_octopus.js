@@ -182,27 +182,47 @@ async function scrapeOctopusEnergy() {
             const tableButton = await page.$(tableButtonSelector);
             if (tableButton) {
                 await tableButton.click();
-                await page.waitForTimeout(2000);
+                console.log('Clicked table view button');
+                await page.waitForTimeout(3000);
             }
         } catch (e) {
             console.log('Already in table view or button not found');
         }
+        
+        // テーブルが表示されるまで待機
+        console.log('Waiting for table to appear...');
+        await page.waitForSelector('tr[data-part="table-row"]', { timeout: 30000 });
+        
+        // さらに少し待機（データ読み込み完了を確実に）
+        await page.waitForTimeout(3000);
         
         // テーブルデータを取得
         console.log('Extracting table data...');
         
         const tableData = await page.evaluate(() => {
             const rows = Array.from(document.querySelectorAll('tr[data-part="table-row"]'));
+            console.log(`Found ${rows.length} rows in page.evaluate`);
             const data = [];
             
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 const cells = row.querySelectorAll('td[data-part="table-cell"]');
+                const summaryRow = cells[0]?.getAttribute('data-summary-row');
+                
+                // サマリー行（合計行）はスキップ
+                if (summaryRow === 'true') {
+                    console.log(`Skipping summary row at index ${index}`);
+                    return;
+                }
+                
                 if (cells.length >= 2) {
                     const timeText = cells[0].textContent.trim();
                     const consumptionText = cells[1].textContent.trim();
                     
+                    console.log(`Row ${index}: time="${timeText}", consumption="${consumptionText}"`);
+                    
                     // "0.1 kWh" から "0.1" を抽出
-                    const consumption = parseFloat(consumptionText.replace(/[^\d.]/g, ''));
+                    const consumptionMatch = consumptionText.match(/[\d.]+/);
+                    const consumption = consumptionMatch ? parseFloat(consumptionMatch[0]) : 0;
                     
                     if (timeText && !isNaN(consumption)) {
                         data.push({
@@ -212,6 +232,8 @@ async function scrapeOctopusEnergy() {
                     }
                 }
             });
+            
+            console.log(`Extracted ${data.length} records in page.evaluate`);
             
             return data;
         });
