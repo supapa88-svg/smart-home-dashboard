@@ -116,8 +116,30 @@ async function loadCharts() {
             return;
         }
         
-        // ラベル（時刻）
-        const labels = data.map(d => toJSTTime(d.created_at));
+        // データを日本時間のDateオブジェクトに変換
+        const chartData = data.map(d => {
+            const utcDate = new Date(d.created_at);
+            // 日本時間に変換（UTC+9時間）
+            const jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
+            return {
+                time: jstDate,
+                indoor_temp: d.indoor_temp,
+                indoor_humidity: d.indoor_humidity,
+                outdoor_temp: d.outdoor_temp,
+                outdoor_humidity: d.outdoor_humidity
+            };
+        });
+        
+        // 最新データの時刻を上回る正時を計算
+        const latestTime = new Date(Math.max(...chartData.map(d => d.time)));
+        const maxTime = new Date(latestTime);
+        maxTime.setMinutes(0, 0, 0);
+        if (latestTime.getMinutes() > 0 || latestTime.getSeconds() > 0) {
+            maxTime.setHours(maxTime.getHours() + 1);
+        }
+        
+        // 最小値 = 最大値 - 24時間
+        const minTime = new Date(maxTime.getTime() - 24 * 60 * 60 * 1000);
         
         // 温度グラフ
         if (tempChart) tempChart.destroy();
@@ -126,11 +148,10 @@ async function loadCharts() {
         tempChart = new Chart(tempCtx, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [
                     {
                         label: '室内温度',
-                        data: data.map(d => d.indoor_temp),
+                        data: chartData.map(d => ({ x: d.time, y: d.indoor_temp })),
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.1)',
                         tension: 0,
@@ -138,7 +159,7 @@ async function loadCharts() {
                     },
                     {
                         label: '屋外温度',
-                        data: data.map(d => d.outdoor_temp),
+                        data: chartData.map(d => ({ x: d.time, y: d.outdoor_temp })),
                         borderColor: 'rgb(54, 162, 235)',
                         backgroundColor: 'rgba(54, 162, 235, 0.1)',
                         tension: 0,
@@ -146,83 +167,88 @@ async function loadCharts() {
                     }
                 ]
             },
-options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'top',
-        },
-        tooltip: {
-            mode: 'index',
-            intersect: false,
-        }
-    },
-    scales: {
-        y: {
-            beginAtZero: false,
-            min: function(context) {
-                // データから最小値を取得
-                const allData = [
-                    ...context.chart.data.datasets[0].data,
-                    ...context.chart.data.datasets[1].data
-                ].filter(v => v !== null && v !== undefined);
-                
-                if (allData.length === 0) return 0;
-                
-                const dataMin = Math.min(...allData);
-                const dataMax = Math.max(...allData);
-                
-                // 最小値を下回る整数
-                let min = Math.floor(dataMin);
-                // 最大値を上回る整数
-                let max = Math.ceil(dataMax);
-                
-                // 差が10℃未満なら、最大値を最小値+10℃に
-                if (max - min < 10) {
-                    max = min + 10;
-                }
-                
-                return min;
-            },
-            max: function(context) {
-                // データから最大値を取得
-                const allData = [
-                    ...context.chart.data.datasets[0].data,
-                    ...context.chart.data.datasets[1].data
-                ].filter(v => v !== null && v !== undefined);
-                
-                if (allData.length === 0) return 10;
-                
-                const dataMin = Math.min(...allData);
-                const dataMax = Math.max(...allData);
-                
-                // 最小値を下回る整数
-                let min = Math.floor(dataMin);
-                // 最大値を上回る整数
-                let max = Math.ceil(dataMax);
-                
-                // 差が10℃未満なら、最大値を最小値+10℃に
-                if (max - min < 10) {
-                    max = min + 10;
-                }
-                
-                return max;
-            },
-            ticks: {
-                callback: function(value) {
-                    return value + '°C';
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            stepSize: 1,
+                            displayFormats: {
+                                hour: 'HH:mm'
+                            },
+                            tooltipFormat: 'yyyy/MM/dd HH:mm'
+                        },
+                        min: minTime,
+                        max: maxTime,
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 25
+                        }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        min: function(context) {
+                            const allData = [
+                                ...context.chart.data.datasets[0].data.map(d => d.y),
+                                ...context.chart.data.datasets[1].data.map(d => d.y)
+                            ].filter(v => v !== null && v !== undefined);
+                            
+                            if (allData.length === 0) return 0;
+                            
+                            const dataMin = Math.min(...allData);
+                            const dataMax = Math.max(...allData);
+                            
+                            let min = Math.floor(dataMin);
+                            let max = Math.ceil(dataMax);
+                            
+                            if (max - min < 10) {
+                                max = min + 10;
+                            }
+                            
+                            return min;
+                        },
+                        max: function(context) {
+                            const allData = [
+                                ...context.chart.data.datasets[0].data.map(d => d.y),
+                                ...context.chart.data.datasets[1].data.map(d => d.y)
+                            ].filter(v => v !== null && v !== undefined);
+                            
+                            if (allData.length === 0) return 10;
+                            
+                            const dataMin = Math.min(...allData);
+                            const dataMax = Math.max(...allData);
+                            
+                            let min = Math.floor(dataMin);
+                            let max = Math.ceil(dataMax);
+                            
+                            if (max - min < 10) {
+                                max = min + 10;
+                            }
+                            
+                            return max;
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '°C';
+                            }
+                        }
+                    }
                 }
             }
-        },
-        x: {
-            ticks: {
-                maxRotation: 45,
-                minRotation: 45
-            }
-        }
-    }
-} 
         });
         
         // 湿度グラフ
@@ -232,11 +258,10 @@ options: {
         humidityChart = new Chart(humidityCtx, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [
                     {
                         label: '室内湿度',
-                        data: data.map(d => d.indoor_humidity),
+                        data: chartData.map(d => ({ x: d.time, y: d.indoor_humidity })),
                         borderColor: 'rgb(78, 205, 196)',
                         backgroundColor: 'rgba(78, 205, 196, 0.1)',
                         tension: 0,
@@ -244,7 +269,7 @@ options: {
                     },
                     {
                         label: '屋外湿度',
-                        data: data.map(d => d.outdoor_humidity),
+                        data: chartData.map(d => ({ x: d.time, y: d.outdoor_humidity })),
                         borderColor: 'rgb(255, 159, 64)',
                         backgroundColor: 'rgba(255, 159, 64, 0.1)',
                         tension: 0,
@@ -265,6 +290,25 @@ options: {
                     }
                 },
                 scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            stepSize: 1,
+                            displayFormats: {
+                                hour: 'HH:mm'
+                            },
+                            tooltipFormat: 'yyyy/MM/dd HH:mm'
+                        },
+                        min: minTime,
+                        max: maxTime,
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 25
+                        }
+                    },
                     y: {
                         beginAtZero: false,
                         min: 0,
@@ -273,12 +317,6 @@ options: {
                             callback: function(value) {
                                 return value + '%';
                             }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
                         }
                     }
                 }
