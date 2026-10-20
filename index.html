@@ -166,6 +166,52 @@ h1 {
             text-align: center;
             margin: 20px 0;
         }
+                /* フィルター */
+        .filter-section {
+            margin-bottom: 20px;
+        }
+        
+        .filter-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .filter-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .filter-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 6px;
+            cursor: pointer;
+        }
+        
+        .checkbox-label span {
+            font-size: 0.95em;
+            color: #333;
+        }
+        
+        .checkbox-label:hover span {
+            color: #667eea;
+        }
+
+
+        
 
         @media (max-width: 768px) {
             h1 {
@@ -214,6 +260,32 @@ h1 {
                 <div class="metric">
                     <span class="metric-label">湿度</span>
                     <span class="metric-value humidity" id="outdoor-humidity">--</span>
+                </div>
+            </div>
+
+            <!-- フィルター -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>📅 表示設定</h2>
+                
+                <div class="filter-section">
+                    <div class="filter-label">表示する日:</div>
+                    <div class="filter-checkboxes" id="dateFilters">
+                        <!-- JavaScriptで動的に生成 -->
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-label">表示する場所:</div>
+                    <div class="filter-checkboxes">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterIndoor" checked>
+                            <span>室内</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterOutdoor" checked>
+                            <span>屋外</span>
+                        </label>
+                    </div>
                 </div>
             </div>
             
