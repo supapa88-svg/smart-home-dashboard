@@ -1,11 +1,11 @@
 // Supabase設定
 const SUPABASE_URL = 'https://mbypfeifkyrisnqjfpbq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_XUPp_IwZKgpFv9MTJwHBSg_DNlba5VE';  // ← ここを実際のキーに変更
+const SUPABASE_KEY = 'sb_publishable_XUPp_IwZKgpFv9MTJwHBSg_DNlba5VE';  // ← 実際のキーに変更
 
-// Supabaseクライアント初期化
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let tempChart, humidityChart;
+let allData = [];  // 7日分のデータを保持
 
 // 日本時間に変換
 function toJST(utcDateString) {
@@ -21,14 +21,17 @@ function toJST(utcDateString) {
     });
 }
 
-// 時刻のみ（グラフ用）
-function toJSTTime(utcDateString) {
-    const date = new Date(utcDateString);
-    return date.toLocaleTimeString('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+// 日付フォーマット（MM/DD）
+function formatDate(date) {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
+}
+
+// 曜日取得
+function getDayOfWeek(date) {
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    return days[date.getDay()];
 }
 
 // エラー表示
@@ -39,21 +42,78 @@ function showError(message) {
     document.getElementById('loading').style.display = 'none';
 }
 
+// 日付フィルターのチェックボックスを生成
+function createDateFilters() {
+    const container = document.getElementById('dateFilters');
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        
+        const dateStr = formatDate(date);
+        const dayOfWeek = getDayOfWeek(date);
+        const label = i === 0 ? `今日(${dateStr}${dayOfWeek})` : `${i}日前(${dateStr}${dayOfWeek})`;
+        
+        const checkboxLabel = document.createElement('label');
+        checkboxLabel.className = 'checkbox-label';
+        checkboxLabel.innerHTML = `
+            <input type="checkbox" class="date-filter" data-days-ago="${i}" checked>
+            <span>${label}</span>
+        `;
+        
+        container.appendChild(checkboxLabel);
+    }
+    
+    // チェックボックス変更時にグラフ更新
+    container.addEventListener('change', updateCharts);
+    document.getElementById('filterIndoor').addEventListener('change', updateCharts);
+    document.getElementById('filterOutdoor').addEventListener('change', updateCharts);
+}
+
 // 初期化
 async function init() {
     try {
+        createDateFilters();
+        await loadAllData();
         await loadCurrentData();
-        await loadCharts();
+        updateCharts();
         
         document.getElementById('loading').style.display = 'none';
         document.getElementById('dashboard').style.display = 'grid';
         
         // 5分ごとに更新
-        setInterval(loadCurrentData, 5 * 60 * 1000);
-        setInterval(loadCharts, 15 * 60 * 1000);
+        setInterval(async () => {
+            await loadAllData();
+            await loadCurrentData();
+            updateCharts();
+        }, 5 * 60 * 1000);
         
     } catch (error) {
         console.error('Initialization error:', error);
+        showError('データの読み込みに失敗しました。');
+    }
+}
+
+// 7日分のデータを読み込み
+async function loadAllData() {
+    try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        const { data, error } = await supabaseClient
+            .from('sensor_data')
+            .select('*')
+            .not('indoor_temp', 'is', null)
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        
+        allData = data || [];
+        
+    } catch (error) {
+        console.error('Error loading all data:', error);
         showError('データの読み込みに失敗しました。');
     }
 }
@@ -73,17 +133,14 @@ async function loadCurrentData() {
         if (data && data.length > 0) {
             const latest = data[0];
             
-            // 最終更新時刻
             document.getElementById('lastUpdate').textContent = 
                 `最終更新: ${toJST(latest.created_at)}`;
             
-            // 室内
             document.getElementById('indoor-temp').textContent = 
                 latest.indoor_temp !== null ? `${latest.indoor_temp}°C` : '--';
             document.getElementById('indoor-humidity').textContent = 
                 latest.indoor_humidity !== null ? `${latest.indoor_humidity}%` : '--';
             
-            // 屋外
             document.getElementById('outdoor-temp').textContent = 
                 latest.outdoor_temp !== null ? `${latest.outdoor_temp}°C` : '--';
             document.getElementById('outdoor-humidity').textContent = 
@@ -92,245 +149,227 @@ async function loadCurrentData() {
         
     } catch (error) {
         console.error('Error loading current data:', error);
-        showError('現在のデータの読み込みに失敗しました。');
     }
 }
 
-// グラフ読み込み
-async function loadCharts() {
-    try {
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+// グラフ更新
+function updateCharts() {
+    // チェックされた日付を取得
+    const selectedDays = Array.from(document.querySelectorAll('.date-filter:checked'))
+        .map(cb => parseInt(cb.dataset.daysAgo));
+    
+    // 室内・屋外のフィルター
+    const showIndoor = document.getElementById('filterIndoor').checked;
+    const showOutdoor = document.getElementById('filterOutdoor').checked;
+    
+    if (selectedDays.length === 0 || (!showIndoor && !showOutdoor)) {
+        // 何も選択されていない場合はグラフをクリア
+        if (tempChart) tempChart.destroy();
+        if (humidityChart) humidityChart.destroy();
+        return;
+    }
+    
+    // データセットを作成
+    const tempDatasets = [];
+    const humidityDatasets = [];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    selectedDays.forEach(daysAgo => {
+        const targetDate = new Date(today);
+        targetDate.setDate(targetDate.getDate() - daysAgo);
+        const nextDate = new Date(targetDate);
+        nextDate.setDate(nextDate.getDate() + 1);
         
-        const { data, error } = await supabaseClient
-            .from('sensor_data')
-            .select('*')
-            .not('indoor_temp', 'is', null)
-            .gte('created_at', yesterday.toISOString())
-            .order('created_at', { ascending: true });
+        // その日のデータを抽出
+        const dayData = allData.filter(d => {
+            const dataDate = new Date(d.created_at);
+            return dataDate >= targetDate && dataDate < nextDate;
+        });
         
-        if (error) throw error;
+        if (dayData.length === 0) return;
         
-        if (!data || data.length === 0) {
-            console.warn('No data available for charts');
-            return;
+        // 時刻のみに変換（00:00基準）
+        const processedData = dayData.map(d => {
+            const dataDate = new Date(d.created_at);
+            const hours = dataDate.getUTCHours() + 9;  // 日本時間に変換
+            const minutes = dataDate.getUTCMinutes();
+            const timeInHours = (hours % 24) + minutes / 60;
+            
+            return {
+                x: timeInHours,
+                indoor_temp: d.indoor_temp,
+                indoor_humidity: d.indoor_humidity,
+                outdoor_temp: d.outdoor_temp,
+                outdoor_humidity: d.outdoor_humidity
+            };
+        });
+        
+        // 透明度を計算（新しいほど濃い）
+        const opacity = 1.0 - (daysAgo * 0.12);
+        
+        // ラベル作成
+        const dateLabel = formatDate(new Date(targetDate.getTime() + 9 * 60 * 60 * 1000));
+        const dayLabel = getDayOfWeek(new Date(targetDate.getTime() + 9 * 60 * 60 * 1000));
+        
+        // 室内データ
+        if (showIndoor) {
+            tempDatasets.push({
+                label: `室内: ${dateLabel}${dayLabel}`,
+                data: processedData.map(d => ({ x: d.x, y: d.indoor_temp })),
+                borderColor: `rgba(255, 99, 132, ${opacity})`,
+                backgroundColor: `rgba(255, 99, 132, ${opacity * 0.1})`,
+                tension: 0,
+                fill: false,
+                pointRadius: 0
+            });
+            
+            humidityDatasets.push({
+                label: `室内: ${dateLabel}${dayLabel}`,
+                data: processedData.map(d => ({ x: d.x, y: d.indoor_humidity })),
+                borderColor: `rgba(255, 99, 132, ${opacity})`,
+                backgroundColor: `rgba(255, 99, 132, ${opacity * 0.1})`,
+                tension: 0,
+                fill: false,
+                pointRadius: 0
+            });
         }
         
-// データをそのまま使用（UTCのまま）
-const chartData = data.map(d => ({
-    time: new Date(d.created_at),
-    indoor_temp: d.indoor_temp,
-    indoor_humidity: d.indoor_humidity,
-    outdoor_temp: d.outdoor_temp,
-    outdoor_humidity: d.outdoor_humidity
-}));
-
-// 最新データの時刻（UTC）
-const latestTime = new Date(Math.max(...chartData.map(d => d.time)));
-
-// 日本時間で次の正時を計算
-// UTCに9時間足して日本時間にする
-const latestTimeJST = new Date(latestTime.getTime() + 9 * 60 * 60 * 1000);
-
-// 次の正時（日本時間）
-const maxTimeJST = new Date(latestTimeJST);
-maxTimeJST.setUTCMinutes(0, 0, 0);
-if (latestTimeJST.getUTCMinutes() > 0 || latestTimeJST.getUTCSeconds() > 0) {
-    maxTimeJST.setUTCHours(maxTimeJST.getUTCHours() + 1);
-}
-
-// UTCに戻す（9時間引く）
-const maxTime = new Date(maxTimeJST.getTime() - 9 * 60 * 60 * 1000);
-
-// 最小値 = 最大値 - 24時間
-const minTime = new Date(maxTime.getTime() - 24 * 60 * 60 * 1000);
-        
-        // 温度グラフ
-        if (tempChart) tempChart.destroy();
-        
-        const tempCtx = document.getElementById('tempChart').getContext('2d');
-        tempChart = new Chart(tempCtx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        label: '室内温度',
-                        data: chartData.map(d => ({ x: d.time, y: d.indoor_temp })),
-                        borderColor: 'rgb(255, 99, 132)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                        tension: 0,
-                        fill: true
-                    },
-                    {
-                        label: '屋外温度',
-                        data: chartData.map(d => ({ x: d.time, y: d.outdoor_temp })),
-                        borderColor: 'rgb(54, 162, 235)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
+        // 屋外データ
+        if (showOutdoor) {
+            tempDatasets.push({
+                label: `屋外: ${dateLabel}${dayLabel}`,
+                data: processedData.map(d => ({ x: d.x, y: d.outdoor_temp })),
+                borderColor: `rgba(54, 162, 235, ${opacity})`,
+                backgroundColor: `rgba(54, 162, 235, ${opacity * 0.1})`,
+                tension: 0,
+                fill: false,
+                pointRadius: 0
+            });
+            
+            humidityDatasets.push({
+                label: `屋外: ${dateLabel}${dayLabel}`,
+                data: processedData.map(d => ({ x: d.x, y: d.outdoor_humidity })),
+                borderColor: `rgba(54, 162, 235, ${opacity})`,
+                backgroundColor: `rgba(54, 162, 235, ${opacity * 0.1})`,
+                tension: 0,
+                fill: false,
+                pointRadius: 0
+            });
+        }
+    });
+    
+    // 温度グラフ
+    if (tempChart) tempChart.destroy();
+    
+    const tempCtx = document.getElementById('tempChart').getContext('2d');
+    tempChart = new Chart(tempCtx, {
+        type: 'line',
+        data: {
+            datasets: tempDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 11
+                        }
                     }
                 },
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'hour',
-                            stepSize: 1,
-                            displayFormats: {
-                                hour: 'HH:mm'
-                            },
-                            tooltipFormat: 'yyyy/MM/dd HH:mm'
-                        },
-                        min: minTime,
-                        max: maxTime,
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            autoSkip: true,
-                            maxTicksLimit: 25
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: 0,
+                    max: 24,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value.toString().padStart(2, '0') + ':00';
                         }
                     },
-                    y: {
-                        beginAtZero: false,
-                        min: function(context) {
-                            const allData = [
-                                ...context.chart.data.datasets[0].data.map(d => d.y),
-                                ...context.chart.data.datasets[1].data.map(d => d.y)
-                            ].filter(v => v !== null && v !== undefined);
-                            
-                            if (allData.length === 0) return 0;
-                            
-                            const dataMin = Math.min(...allData);
-                            const dataMax = Math.max(...allData);
-                            
-                            let min = Math.floor(dataMin);
-                            let max = Math.ceil(dataMax);
-                            
-                            if (max - min < 10) {
-                                max = min + 10;
-                            }
-                            
-                            return min;
-                        },
-                        max: function(context) {
-                            const allData = [
-                                ...context.chart.data.datasets[0].data.map(d => d.y),
-                                ...context.chart.data.datasets[1].data.map(d => d.y)
-                            ].filter(v => v !== null && v !== undefined);
-                            
-                            if (allData.length === 0) return 10;
-                            
-                            const dataMin = Math.min(...allData);
-                            const dataMax = Math.max(...allData);
-                            
-                            let min = Math.floor(dataMin);
-                            let max = Math.ceil(dataMax);
-                            
-                            if (max - min < 10) {
-                                max = min + 10;
-                            }
-                            
-                            return max;
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return value + '°C';
-                            }
+                    title: {
+                        display: true,
+                        text: '時刻'
+                    }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '°C';
                         }
                     }
                 }
             }
-        });
-        
-        // 湿度グラフ
-        if (humidityChart) humidityChart.destroy();
-        
-        const humidityCtx = document.getElementById('humidityChart').getContext('2d');
-        humidityChart = new Chart(humidityCtx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    {
-                        label: '室内湿度',
-                        data: chartData.map(d => ({ x: d.time, y: d.indoor_humidity })),
-                        borderColor: 'rgb(78, 205, 196)',
-                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                        tension: 0,
-                        fill: true
-                    },
-                    {
-                        label: '屋外湿度',
-                        data: chartData.map(d => ({ x: d.time, y: d.outdoor_humidity })),
-                        borderColor: 'rgb(255, 159, 64)',
-                        backgroundColor: 'rgba(255, 159, 64, 0.1)',
-                        tension: 0,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
+        }
+    });
+    
+    // 湿度グラフ
+    if (humidityChart) humidityChart.destroy();
+    
+    const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+    humidityChart = new Chart(humidityCtx, {
+        type: 'line',
+        data: {
+            datasets: humidityDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 11
+                        }
                     }
                 },
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'hour',
-                            stepSize: 1,
-                            displayFormats: {
-                                hour: 'HH:mm'
-                            },
-                            tooltipFormat: 'yyyy/MM/dd HH:mm'
-                        },
-                        min: minTime,
-                        max: maxTime,
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            autoSkip: true,
-                            maxTicksLimit: 25
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: 0,
+                    max: 24,
+                    ticks: {
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value.toString().padStart(2, '0') + ':00';
                         }
                     },
-                    y: {
-                        beginAtZero: false,
-                        min: 0,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
+                    title: {
+                        display: true,
+                        text: '時刻'
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
                         }
                     }
                 }
             }
-        });
-        
-    } catch (error) {
-        console.error('Error loading charts:', error);
-        showError('グラフの読み込みに失敗しました。');
-    }
+        }
+    });
 }
 
 // ページ読み込み時に実行
