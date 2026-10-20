@@ -18,6 +18,16 @@ jobs:
         with:
           node-version: '18'
       
+      - name: Cache node modules and Puppeteer
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            ~/.cache/puppeteer
+          key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
       - name: Install dependencies
         run: npm install
       
@@ -39,6 +49,7 @@ jobs:
             libasound2t64
       
       - name: Scrape Octopus Energy
+        timeout-minutes: 10
         env:
           OCTOPUS_EMAIL: ${{ secrets.OCTOPUS_EMAIL }}
           OCTOPUS_PASSWORD: ${{ secrets.OCTOPUS_PASSWORD }}
