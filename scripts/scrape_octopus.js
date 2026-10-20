@@ -122,14 +122,31 @@ async function scrapeOctopusEnergy() {
         
         // ログインページにリダイレクトされていないか確認
         if (afterLoginUrl.includes('/login')) {
-            // スクリーンショットを保存（デバッグ用）
-            await page.screenshot({ path: '/tmp/login-failed.png' });
+            console.log('Login failed, checking page content...');
             
             // ページ内容を確認
             const pageContent = await page.content();
-            console.log('Page content (first 500 chars):', pageContent.substring(0, 500));
+            console.log('Page content (first 1000 chars):', pageContent.substring(0, 1000));
             
-            throw new Error(`Login failed: Still on login page. URL: ${afterLoginUrl}`);
+            // エラーメッセージがあるか確認
+            const errorMessage = await page.evaluate(() => {
+                const errorElement = document.querySelector('[role="alert"], .error, .error-message, [data-part="alert"]');
+                return errorElement ? errorElement.textContent : 'No error message found';
+            });
+            console.log('Error message on page:', errorMessage);
+            
+            // フォームの状態を確認
+            const formState = await page.evaluate(() => {
+                const emailInput = document.querySelector('input[id="email"]');
+                const passwordInput = document.querySelector('input[id="password"]');
+                return {
+                    emailValue: emailInput ? emailInput.value : 'not found',
+                    passwordValue: passwordInput ? (passwordInput.value ? 'filled' : 'empty') : 'not found'
+                };
+            });
+            console.log('Form state:', JSON.stringify(formState));
+            
+            throw new Error(`Login failed: Still on login page. URL: ${afterLoginUrl}. Error: ${errorMessage}`);
         }
         
         console.log('Logged in successfully');
