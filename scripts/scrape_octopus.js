@@ -67,18 +67,39 @@ async function scrapeOctopusEnergy() {
         // 使用量ページに移動
         console.log('Navigating to usage page...');
         await page.goto('https://octopusenergy.co.jp/account/A-308611DA/usage', {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'networkidle2',  // より確実に読み込み完了を待つ
             timeout: 120000
         });
         
         // ページが読み込まれるまで待機
-        await page.waitForTimeout(5000);
+        console.log('Waiting for page to load...');
+        await page.waitForTimeout(10000);  // 5秒 → 10秒に延長
+        
+        // デバッグ：現在のURLを確認
+        const currentUrl = page.url();
+        console.log(`Current URL: ${currentUrl}`);
+        
+        // デバッグ：ページタイトルを確認
+        const pageTitle = await page.title();
+        console.log(`Page title: ${pageTitle}`);
+        
+        // デバッグ：トグルボタンの存在確認
+        const toggleButtons = await page.$$('button[data-part="toggle-button-option"]');
+        console.log(`Found ${toggleButtons.length} toggle buttons`);
+        
+        if (toggleButtons.length === 0) {
+            // ボタンが見つからない場合、ページのHTMLを出力
+            const bodyHTML = await page.evaluate(() => document.body.innerHTML);
+            console.log('Page HTML (first 1000 chars):', bodyHTML.substring(0, 1000));
+            throw new Error('Toggle buttons not found on the page');
+        }
         
         // 「日」タブをクリック
         console.log('Selecting day view...');
         
         // すべてのトグルボタンを取得して「日」を探す
         await page.waitForSelector('button[data-part="toggle-button-option"]', { timeout: 30000 });
+
         
         const dayButton = await page.evaluateHandle(() => {
             const buttons = Array.from(document.querySelectorAll('button[data-part="toggle-button-option"]'));
