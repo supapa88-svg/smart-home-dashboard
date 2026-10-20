@@ -29,15 +29,50 @@ async function scrapeOctopusEnergy() {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-blink-features=AutomationControlled',  // 自動化検出を無効化
+            '--window-size=1920,1080'
         ]
     });
     
     try {
         const page = await browser.newPage();
         
-        // User-Agentを設定
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        // ビューポート設定
+        await page.setViewport({ width: 1920, height: 1080 });
+        
+        // User-Agentを設定（より新しいバージョン）
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36');
+        
+        // WebDriver検出を回避
+        await page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => false,
+            });
+            
+            // Chrome検出を回避
+            window.navigator.chrome = {
+                runtime: {},
+            };
+            
+            // Permissions検出を回避
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({ state: Notification.permission }) :
+                    originalQuery(parameters)
+            );
+            
+            // Plugin検出を回避
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5],
+            });
+            
+            // Language検出を回避
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['ja-JP', 'ja', 'en-US', 'en'],
+            });
+        });
         
         console.log('Navigating to Octopus Energy login page...');
         
@@ -52,11 +87,16 @@ async function scrapeOctopusEnergy() {
         
         console.log('Logging in...');
         
-        // メールアドレスとパスワードを入力
-        await page.type('input[id="email"]', OCTOPUS_EMAIL, { delay: 100 });
-        await page.waitForTimeout(1000);
-        await page.type('input[id="password"]', OCTOPUS_PASSWORD, { delay: 100 });
-        await page.waitForTimeout(1000);
+        // メールアドレスとパスワードを入力（よりランダムに）
+        await page.click('input[id="email"]');
+        await page.waitForTimeout(500 + Math.random() * 500);
+        await page.type('input[id="email"]', OCTOPUS_EMAIL, { delay: 50 + Math.random() * 100 });
+        await page.waitForTimeout(1000 + Math.random() * 1000);
+        
+        await page.click('input[id="password"]');
+        await page.waitForTimeout(500 + Math.random() * 500);
+        await page.type('input[id="password"]', OCTOPUS_PASSWORD, { delay: 50 + Math.random() * 100 });
+        await page.waitForTimeout(1000 + Math.random() * 1000);
         
         console.log('Clicking login button...');
         
