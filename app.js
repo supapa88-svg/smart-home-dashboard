@@ -304,13 +304,68 @@ function updateCharts() {
                     }
                 },
                 y: {
-                    beginAtZero: false,
-                    ticks: {
-                        callback: function(value) {
-                            return value + '°C';
-                        }
-                    }
+    beginAtZero: false,
+    min: function(context) {
+        // 全データから最小値・最大値を取得
+        const allValues = [];
+        context.chart.data.datasets.forEach(dataset => {
+            dataset.data.forEach(point => {
+                if (point.y !== null && point.y !== undefined) {
+                    allValues.push(point.y);
                 }
+            });
+        });
+        
+        if (allValues.length === 0) return 0;
+        
+        const dataMin = Math.min(...allValues);
+        const dataMax = Math.max(...allValues);
+        
+        let min = Math.floor(dataMin);
+        let max = Math.ceil(dataMax);
+        
+        // 差が10℃未満なら、最大値を最小値+10℃に
+        if (max - min < 10) {
+            max = min + 10;
+        }
+        
+        return min;
+    },
+    max: function(context) {
+        // 全データから最小値・最大値を取得
+        const allValues = [];
+        context.chart.data.datasets.forEach(dataset => {
+            dataset.data.forEach(point => {
+                if (point.y !== null && point.y !== undefined) {
+                    allValues.push(point.y);
+                }
+            });
+        });
+        
+        if (allValues.length === 0) return 10;
+        
+        const dataMin = Math.min(...allValues);
+        const dataMax = Math.max(...allValues);
+        
+        let min = Math.floor(dataMin);
+        let max = Math.ceil(dataMax);
+        
+        // 差が10℃未満なら、最大値を最小値+10℃に
+        if (max - min < 10) {
+            max = min + 10;
+        }
+        
+        return max;
+    },
+    ticks: {
+        callback: function(value) {
+            return value + '°C';
+        }
+    }
+}
+
+
+                
             }
         }
     });
