@@ -4,6 +4,7 @@ import datetime
 from typing import List, Optional
 import httpx
 from supabase import create_client
+from zoneinfo import ZoneInfo  # タイムゾーン対応
 
 # 環境変数から設定を取得
 OCTOPUS_EMAIL = os.environ['OCTOPUS_EMAIL']
@@ -180,9 +181,10 @@ async def main():
         account_number = await get_account_number(token)
         print(f"Account number: {account_number}")
         
-        # 今日のデータを取得
+        # 今日のデータを取得（日本時間）
+        jst = ZoneInfo("Asia/Tokyo")
         today = datetime.date.today()
-        start_at = datetime.datetime.combine(today, datetime.time.min)
+        start_at = datetime.datetime.combine(today, datetime.time.min, tzinfo=jst)
         
         print(f"Fetching data for {today}...")
         readings = await get_readings(token, account_number, start_at)
