@@ -333,7 +333,7 @@ function updateCharts() {
                     }
                 },
                 tooltip: {
-                    mode: 'index',
+                    mode: 'nearest',
                     intersect: false,
                     position: 'nearest',
                     xAlign: 'center',
@@ -455,7 +455,7 @@ function updateCharts() {
                     }
                 },
                 tooltip: {
-                    mode: 'index',
+                    mode: 'nearest',
                     intersect: false,
                     position: 'nearest',
                     xAlign: 'center',
