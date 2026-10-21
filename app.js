@@ -525,11 +525,9 @@ function updateCharts() {
                         energyDatasets.push({
                             label: dateLabel,
                             data: energyByDate[date],
+                            backgroundColor: `rgba(255, 193, 7, ${opacity})`,
                             borderColor: `rgba(255, 193, 7, ${opacity})`,
-                            backgroundColor: `rgba(255, 193, 7, ${opacity * 0.1})`,
-                            tension: 0,
-                            fill: false,
-                            pointRadius: 0
+                            borderWidth: 1
                         });
                     });
                     
@@ -539,7 +537,7 @@ function updateCharts() {
                     }
                     
                     window.energyChart = new Chart(energyCtx, {
-                        type: 'line',
+                        type: 'bar',
                         data: { datasets: energyDatasets },
                         options: {
                             responsive: true,
