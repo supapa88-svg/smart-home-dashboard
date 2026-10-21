@@ -262,7 +262,18 @@ h1 {
                     <span class="metric-value humidity" id="outdoor-humidity">--</span>
                 </div>
             </div>
-
+        <!-- 電力情報 -->
+        <div class="card compact">
+            <h2>⚡ 電力情報</h2>
+            <div class="metric">
+                <span class="metric-label">今日の使用量</span>
+                <span class="metric-value" id="today-energy">--</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">昨日の使用量</span>
+                <span class="metric-value" id="yesterday-energy">--</span>
+            </div>
+        </div>
             <!-- フィルター -->
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>📅 表示設定</h2>
@@ -302,6 +313,13 @@ h1 {
                 <h2>💧 しつど</h2>
                 <div class="chart-container">
                     <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+                        <!-- 電力グラフ -->
+            <div class="card chart-card">
+                <h2>⚡ 電力使用量（過去7日間）</h2>
+                <div class="chart-container">
+                    <canvas id="energyChart"></canvas>
                 </div>
             </div>
         </div>
