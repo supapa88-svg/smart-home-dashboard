@@ -158,7 +158,10 @@ async function loadCurrentData() {
 async function loadEnergyData() {
     try {
         // 今日の使用量
-        const today = new Date().toISOString().split('T')[0];
+        const todayDate = new Date();
+        const today = todayDate.toISOString().split('T')[0];
+        const todayLabel = `${todayDate.getMonth() + 1}/${todayDate.getDate()}${getDayOfWeek(todayDate)}`;
+        
         const { data: todayData, error: todayError } = await supabaseClient
             .from('energy_data')
             .select('consumption')
@@ -170,10 +173,15 @@ async function loadEnergyData() {
         document.getElementById('today-energy').textContent = 
             `${todayTotal.toFixed(1)} kWh`;
         
+        // ラベルを更新
+        document.querySelector('#today-energy').previousElementSibling.textContent = 
+            `今日(${todayLabel})の使用量`;
+        
         // 昨日の使用量
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
+        const yesterdayLabel = `${yesterdayDate.getMonth() + 1}/${yesterdayDate.getDate()}${getDayOfWeek(yesterdayDate)}`;
         
         const { data: yesterdayData, error: yesterdayError } = await supabaseClient
             .from('energy_data')
@@ -185,6 +193,10 @@ async function loadEnergyData() {
         const yesterdayTotal = yesterdayData?.reduce((sum, row) => sum + (row.consumption || 0), 0) || 0;
         document.getElementById('yesterday-energy').textContent = 
             `${yesterdayTotal.toFixed(1)} kWh`;
+        
+        // ラベルを更新
+        document.querySelector('#yesterday-energy').previousElementSibling.textContent = 
+            `昨日(${yesterdayLabel})の使用量`;
         
     } catch (error) {
         console.error('Error loading energy data:', error);
