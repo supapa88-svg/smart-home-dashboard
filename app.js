@@ -522,7 +522,9 @@ function updateCharts() {
                     });
                     
                     // グラフ作成
-                    if (window.energyChart) window.energyChart.destroy();
+                    if (window.energyChart && typeof window.energyChart.destroy === 'function') {
+                        window.energyChart.destroy();
+                    }
                     
                     window.energyChart = new Chart(energyCtx, {
                         type: 'line',
