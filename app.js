@@ -335,6 +335,18 @@ function updateCharts() {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    position: 'nearest',
+                    xAlign: 'center',
+                    yAlign: 'bottom',
+                    callbacks: {
+                        title: function(context) {
+                            // x値（時刻の小数）をHH:MM形式に変換
+                            const timeValue = context[0].parsed.x;
+                            const hours = Math.floor(timeValue);
+                            const minutes = Math.round((timeValue - hours) * 60);
+                            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -445,6 +457,18 @@ function updateCharts() {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    position: 'nearest',
+                    xAlign: 'center',
+                    yAlign: 'bottom',
+                    callbacks: {
+                        title: function(context) {
+                            // x値（時刻の小数）をHH:MM形式に変換
+                            const timeValue = context[0].parsed.x;
+                            const hours = Math.floor(timeValue);
+                            const minutes = Math.round((timeValue - hours) * 60);
+                            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        }
+                    }
                 }
             },
             scales: {
