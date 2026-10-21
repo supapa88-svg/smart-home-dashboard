@@ -175,7 +175,7 @@ async function loadEnergyData() {
         
         // ラベルを更新
         document.querySelector('#today-energy').previousElementSibling.textContent = 
-            `今日(${todayLabel})の使用量`;
+            `今日(${todayLabel})`;
         
         // 昨日の使用量
         const yesterdayDate = new Date();
@@ -196,7 +196,7 @@ async function loadEnergyData() {
         
         // ラベルを更新
         document.querySelector('#yesterday-energy').previousElementSibling.textContent = 
-            `昨日(${yesterdayLabel})の使用量`;
+            `昨日(${yesterdayLabel})`;
         
     } catch (error) {
         console.error('Error loading energy data:', error);
