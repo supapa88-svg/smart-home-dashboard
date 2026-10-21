@@ -77,6 +77,7 @@ async function init() {
         createDateFilters();
         await loadAllData();
         await loadCurrentData();
+        await loadEnergyData();  // ← 追加
         updateCharts();
         
         document.getElementById('loading').style.display = 'none';
@@ -86,6 +87,7 @@ async function init() {
         setInterval(async () => {
             await loadAllData();
             await loadCurrentData();
+            await loadEnergyData();  // ← 追加
             updateCharts();
         }, 5 * 60 * 1000);
         
@@ -152,6 +154,42 @@ async function loadCurrentData() {
     }
 }
 
+// 電力データ読み込み
+async function loadEnergyData() {
+    try {
+        // 今日の使用量
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayData, error: todayError } = await supabaseClient
+            .from('energy_data')
+            .select('consumption')
+            .eq('date', today);
+        
+        if (todayError) throw todayError;
+        
+        const todayTotal = todayData?.reduce((sum, row) => sum + (row.consumption || 0), 0) || 0;
+        document.getElementById('today-energy').textContent = 
+            `${todayTotal.toFixed(1)} kWh`;
+        
+        // 昨日の使用量
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        const { data: yesterdayData, error: yesterdayError } = await supabaseClient
+            .from('energy_data')
+            .select('consumption')
+            .eq('date', yesterdayStr);
+        
+        if (yesterdayError) throw yesterdayError;
+        
+        const yesterdayTotal = yesterdayData?.reduce((sum, row) => sum + (row.consumption || 0), 0) || 0;
+        document.getElementById('yesterday-energy').textContent = 
+            `${yesterdayTotal.toFixed(1)} kWh`;
+        
+    } catch (error) {
+        console.error('Error loading energy data:', error);
+    }
+}
 // グラフ更新
 function updateCharts() {
     // チェックされた日付を取得
@@ -425,6 +463,112 @@ function updateCharts() {
             }
         }
     });
+        // 電力グラフ
+    const energyCtx = document.getElementById('energyChart')?.getContext('2d');
+    
+    if (energyCtx) {
+        // 7日分の電力データを取得
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+        
+        supabaseClient
+            .from('energy_data')
+            .select('*')
+            .gte('date', sevenDaysAgoStr)
+            .order('date', { ascending: true })
+            .order('time', { ascending: true })
+            .then(({ data: energyData, error: energyError }) => {
+                if (energyError) {
+                    console.error('Error loading energy data:', energyError);
+                    return;
+                }
+                
+                if (energyData && energyData.length > 0) {
+                    // 日付ごとにグループ化
+                    const energyByDate = {};
+                    energyData.forEach(row => {
+                        if (!energyByDate[row.date]) {
+                            energyByDate[row.date] = [];
+                        }
+                        // 時刻を時間（小数）に変換
+                        const [hours, minutes] = row.time.split(':').map(Number);
+                        const timeInHours = hours + minutes / 60;
+                        energyByDate[row.date].push({
+                            x: timeInHours,
+                            y: row.consumption
+                        });
+                    });
+                    
+                    // データセット作成
+                    const energyDatasets = [];
+                    const dates = Object.keys(energyByDate).sort();
+                    
+                    dates.forEach((date, index) => {
+                        const daysAgo = dates.length - 1 - index;
+                        const opacity = 1.0 - (daysAgo * 0.12);
+                        const dateObj = new Date(date + 'T00:00:00');
+                        const dateLabel = `${dateObj.getMonth() + 1}/${dateObj.getDate()}${getDayOfWeek(dateObj)}`;
+                        
+                        energyDatasets.push({
+                            label: dateLabel,
+                            data: energyByDate[date],
+                            borderColor: `rgba(255, 193, 7, ${opacity})`,
+                            backgroundColor: `rgba(255, 193, 7, ${opacity * 0.1})`,
+                            tension: 0,
+                            fill: false,
+                            pointRadius: 0
+                        });
+                    });
+                    
+                    // グラフ作成
+                    if (window.energyChart) window.energyChart.destroy();
+                    
+                    window.energyChart = new Chart(energyCtx, {
+                        type: 'line',
+                        data: { datasets: energyDatasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        font: { size: 11 }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    min: 0,
+                                    max: 24,
+                                    ticks: {
+                                        stepSize: 1,
+                                        callback: function(value) {
+                                            return value.toString().padStart(2, '0') + ':00';
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: '時刻'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + ' kWh';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+    }
 }
 
 // ページ読み込み時に実行
