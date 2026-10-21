@@ -205,63 +205,28 @@ async function loadEnergyData() {
     }
 }
 // 統計情報を計算・表示
-async function loadStatistics() {
+async function loadStatistics() {async function loadStatistics() {
     try {
-        // 7日分のデータを使用（allDataから）
-        if (!allData || allData.length === 0) {
-            return;
+        // 室内・屋外の統計を計算（allDataを使用）
+        if (allData && allData.length > 0) {
+            const indoorStats = calculateDetailedStats(allData, 'indoor');
+            const outdoorStats = calculateDetailedStats(allData, 'outdoor');
+
+            // テーブルに表示
+            renderStatsTable('indoor-stats-table', indoorStats);
+            renderStatsTable('outdoor-stats-table', outdoorStats);
         }
-        
-        // 温度・湿度の統計
-        const indoorTemps = allData.map(d => d.indoor_temp).filter(v => v !== null);
-        const outdoorTemps = allData.map(d => d.outdoor_temp).filter(v => v !== null);
-        const indoorHumidities = allData.map(d => d.indoor_humidity).filter(v => v !== null);
-        const outdoorHumidities = allData.map(d => d.outdoor_humidity).filter(v => v !== null);
-        
-        // 温度統計
-        if (indoorTemps.length > 0) {
-            const indoorMax = Math.max(...indoorTemps);
-            const indoorMin = Math.min(...indoorTemps);
-            const indoorAvg = indoorTemps.reduce((a, b) => a + b, 0) / indoorTemps.length;
-            document.getElementById('stats-indoor-temp').textContent = 
-                `最高 ${indoorMax.toFixed(1)}°C / 最低 ${indoorMin.toFixed(1)}°C / 平均 ${indoorAvg.toFixed(1)}°C`;
-        }
-        
-        if (outdoorTemps.length > 0) {
-            const outdoorMax = Math.max(...outdoorTemps);
-            const outdoorMin = Math.min(...outdoorTemps);
-            const outdoorAvg = outdoorTemps.reduce((a, b) => a + b, 0) / outdoorTemps.length;
-            document.getElementById('stats-outdoor-temp').textContent = 
-                `最高 ${outdoorMax.toFixed(1)}°C / 最低 ${outdoorMin.toFixed(1)}°C / 平均 ${outdoorAvg.toFixed(1)}°C`;
-        }
-        
-        // 湿度統計
-        if (indoorHumidities.length > 0) {
-            const indoorMax = Math.max(...indoorHumidities);
-            const indoorMin = Math.min(...indoorHumidities);
-            const indoorAvg = indoorHumidities.reduce((a, b) => a + b, 0) / indoorHumidities.length;
-            document.getElementById('stats-indoor-humidity').textContent = 
-                `最高 ${indoorMax.toFixed(0)}% / 最低 ${indoorMin.toFixed(0)}% / 平均 ${indoorAvg.toFixed(0)}%`;
-        }
-        
-        if (outdoorHumidities.length > 0) {
-            const outdoorMax = Math.max(...outdoorHumidities);
-            const outdoorMin = Math.min(...outdoorHumidities);
-            const outdoorAvg = outdoorHumidities.reduce((a, b) => a + b, 0) / outdoorHumidities.length;
-            document.getElementById('stats-outdoor-humidity').textContent = 
-                `最高 ${outdoorMax.toFixed(0)}% / 最低 ${outdoorMin.toFixed(0)}% / 平均 ${outdoorAvg.toFixed(0)}%`;
-        }
-        
-        // 電力統計
+
+        // 電力統計（既存のコード）
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-        
+
         const { data: energyData, error: energyError } = await supabaseClient
             .from('energy_data')
             .select('date, consumption')
             .gte('date', sevenDaysAgoStr);
-        
+
         if (!energyError && energyData && energyData.length > 0) {
             // 日別に集計
             const dailyTotals = {};
@@ -271,37 +236,31 @@ async function loadStatistics() {
                 }
                 dailyTotals[row.date] += row.consumption || 0;
             });
-            
+
             const totals = Object.values(dailyTotals);
             const dates = Object.keys(dailyTotals);
-            
+
             if (totals.length > 0) {
                 const total = totals.reduce((a, b) => a + b, 0);
                 const avg = total / totals.length;
                 const max = Math.max(...totals);
                 const min = Math.min(...totals);
-                
-                // 最大・最小の日付
+
                 const maxDate = dates[totals.indexOf(max)];
                 const minDate = dates[totals.indexOf(min)];
-                
                 const maxDateObj = new Date(maxDate + 'T00:00:00');
                 const minDateObj = new Date(minDate + 'T00:00:00');
-                
+
                 const maxLabel = `${maxDateObj.getMonth() + 1}/${maxDateObj.getDate()}${getDayOfWeek(maxDateObj)}`;
                 const minLabel = `${minDateObj.getMonth() + 1}/${minDateObj.getDate()}${getDayOfWeek(minDateObj)}`;
-                
-                document.getElementById('stats-energy-total').textContent = 
-                    `${total.toFixed(1)} kWh`;
-                document.getElementById('stats-energy-avg').textContent = 
-                    `${avg.toFixed(1)} kWh`;
-                document.getElementById('stats-energy-max').textContent = 
-                    `${max.toFixed(1)} kWh (${maxLabel})`;
-                document.getElementById('stats-energy-min').textContent = 
-                    `${min.toFixed(1)} kWh (${minLabel})`;
+
+                document.getElementById('stats-energy-total').textContent = `${total.toFixed(1)} kWh`;
+                document.getElementById('stats-energy-avg').textContent = `${avg.toFixed(1)} kWh`;
+                document.getElementById('stats-energy-max').textContent = `${max.toFixed(1)} kWh (${maxLabel})`;
+                document.getElementById('stats-energy-min').textContent = `${min.toFixed(1)} kWh (${minLabel})`;
             }
         }
-        
+
     } catch (error) {
         console.error('Error loading statistics:', error);
     }
@@ -730,3 +689,125 @@ function updateCharts() {
 
 // ページ読み込み時に実行
 window.addEventListener('load', init);
+// 詳細統計を計算（最高・最低値とその日時を含む）
+function calculateDetailedStats(data, location) {
+    const tempKey = `${location}_temp`;
+    const humidityKey = `${location}_humidity`;
+
+    // 温度の統計
+    const tempData = data.filter(d => d[tempKey] !== null && d[tempKey] !== undefined);
+    let tempMax = { value: -Infinity, timestamp: null };
+    let tempMin = { value: Infinity, timestamp: null };
+    let tempSum = 0;
+
+    tempData.forEach(d => {
+        const value = d[tempKey];
+        if (value > tempMax.value) {
+            tempMax = { value, timestamp: d.created_at };
+        }
+        if (value < tempMin.value) {
+            tempMin = { value, timestamp: d.created_at };
+        }
+        tempSum += value;
+    });
+
+    // 湿度の統計
+    const humidityData = data.filter(d => d[humidityKey] !== null && d[humidityKey] !== undefined);
+    let humidityMax = { value: -Infinity, timestamp: null };
+    let humidityMin = { value: Infinity, timestamp: null };
+    let humiditySum = 0;
+
+    humidityData.forEach(d => {
+        const value = d[humidityKey];
+        if (value > humidityMax.value) {
+            humidityMax = { value, timestamp: d.created_at };
+        }
+        if (value < humidityMin.value) {
+            humidityMin = { value, timestamp: d.created_at };
+        }
+        humiditySum += value;
+    });
+
+    return {
+        temperature: {
+            max: tempMax,
+            min: tempMin,
+            avg: tempData.length > 0 ? tempSum / tempData.length : null
+        },
+        humidity: {
+            max: humidityMax,
+            min: humidityMin,
+            avg: humidityData.length > 0 ? humiditySum / humidityData.length : null
+        }
+    };
+}
+
+// 日時フォーマット（MM/DD曜HH:MM形式）
+function formatStatsDateTime(timestamp) {
+    if (!timestamp) return '--';
+    
+    const date = new Date(timestamp);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const weekday = weekdays[date.getDay()];
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${month}/${day}${weekday}${hours}:${minutes}`;
+}
+
+// 統計テーブルを描画
+function renderStatsTable(tableId, stats) {
+    const tbody = document.getElementById(tableId);
+    
+    if (!stats || !stats.temperature || !stats.humidity) {
+        tbody.innerHTML = `
+            <tr>
+                <td class="label">おんど</td>
+                <td colspan="3">データなし</td>
+            </tr>
+            <tr>
+                <td class="label">しつど</td>
+                <td colspan="3">データなし</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    const tempHtml = `
+        <tr>
+            <td class="label">おんど</td>
+            <td>
+                <span class="stats-value">${stats.temperature.max.value.toFixed(1)}°C</span>
+                <span class="stats-timestamp">${formatStatsDateTime(stats.temperature.max.timestamp)}</span>
+            </td>
+            <td>
+                <span class="stats-value">${stats.temperature.min.value.toFixed(1)}°C</span>
+                <span class="stats-timestamp">${formatStatsDateTime(stats.temperature.min.timestamp)}</span>
+            </td>
+            <td>
+                <span class="stats-value">${stats.temperature.avg.toFixed(1)}°C</span>
+            </td>
+        </tr>
+    `;
+
+    const humidityHtml = `
+        <tr>
+            <td class="label">しつど</td>
+            <td>
+                <span class="stats-value">${stats.humidity.max.value.toFixed(0)}%</span>
+                <span class="stats-timestamp">${formatStatsDateTime(stats.humidity.max.timestamp)}</span>
+            </td>
+            <td>
+                <span class="stats-value">${stats.humidity.min.value.toFixed(0)}%</span>
+                <span class="stats-timestamp">${formatStatsDateTime(stats.humidity.min.timestamp)}</span>
+            </td>
+            <td>
+                <span class="stats-value">${stats.humidity.avg.toFixed(0)}%</span>
+            </td>
+        </tr>
+    `;
+
+    tbody.innerHTML = tempHtml + humidityHtml;
+}
