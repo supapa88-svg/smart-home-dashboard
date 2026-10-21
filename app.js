@@ -78,7 +78,6 @@ async function init() {
         await loadAllData();
         await loadCurrentData();
         await loadEnergyData();  // ← 追加
-        await ;  // ← 追加
         updateCharts();
         
         document.getElementById('loading').style.display = 'none';
@@ -89,7 +88,6 @@ async function init() {
             await loadAllData();
             await loadCurrentData();
             await loadEnergyData();  // ← 追加
-            await ;  // ← 追加
             updateCharts();
         }, 5 * 60 * 1000);
         
