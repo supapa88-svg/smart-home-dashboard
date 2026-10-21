@@ -226,6 +226,47 @@ h1 {
                 height: 250px;
             }
         }
+                /* 統計情報 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .stats-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .stats-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+            color: #667eea;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stats-row:last-child {
+            border-bottom: none;
+        }
+        
+        .stats-label {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .stats-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body>
@@ -274,6 +315,56 @@ h1 {
                 <span class="metric-value" id="yesterday-energy">--</span>
             </div>
         </div>
+                <!-- 統計情報 -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>📊 統計情報（過去7日間）</h2>
+                
+                <div class="stats-container">
+                    <div class="stats-section">
+                        <h3>🌡️ 温度</h3>
+                        <div class="stats-row">
+                            <span class="stats-label">室内:</span>
+                            <span class="stats-value" id="stats-indoor-temp">--</span>
+                        </div>
+                        <div class="stats-row">
+                            <span class="stats-label">屋外:</span>
+                            <span class="stats-value" id="stats-outdoor-temp">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>💧 湿度</h3>
+                        <div class="stats-row">
+                            <span class="stats-label">室内:</span>
+                            <span class="stats-value" id="stats-indoor-humidity">--</span>
+                        </div>
+                        <div class="stats-row">
+                            <span class="stats-label">屋外:</span>
+                            <span class="stats-value" id="stats-outdoor-humidity">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-section">
+                        <h3>⚡ 電力</h3>
+                        <div class="stats-row">
+                            <span class="stats-label">合計:</span>
+                            <span class="stats-value" id="stats-energy-total">--</span>
+                        </div>
+                        <div class="stats-row">
+                            <span class="stats-label">1日平均:</span>
+                            <span class="stats-value" id="stats-energy-avg">--</span>
+                        </div>
+                        <div class="stats-row">
+                            <span class="stats-label">最大:</span>
+                            <span class="stats-value" id="stats-energy-max">--</span>
+                        </div>
+                        <div class="stats-row">
+                            <span class="stats-label">最小:</span>
+                            <span class="stats-value" id="stats-energy-min">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- フィルター -->
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>📅 表示設定</h2>
