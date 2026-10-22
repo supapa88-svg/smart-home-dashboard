@@ -606,7 +606,9 @@ console.log('energyDataの日付:', energyData.map(function(row) { return row.da
                 const energyByDate = {};
                 energyData.forEach(function(row) {
                     console.log('チェック中: ' + row.date + ', 含まれる? ' + selectedDates.includes(row.date));
-                    
+                    console.log('型:', typeof row.date, 'vs', typeof selectedDates[0]);
+                    console.log('完全一致?', row.date === selectedDates[1]);
+                     
                     // 選択された日付のみを処理
                     if (!selectedDates.includes(row.date)) {
                         return;
