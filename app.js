@@ -28,6 +28,14 @@ function formatDate(date) {
     return `${month}/${day}`;
 }
 
+// 日付を YYYY-MM-DD 形式のローカル日付文字列に変換
+function toLocalDateString(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // 曜日取得
 function getDayOfWeek(date) {
     const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -54,11 +62,12 @@ function createDateFilters() {
         const dateStr = formatDate(date);
         const dayOfWeek = getDayOfWeek(date);
         const label = i === 0 ? `今日(${dateStr}${dayOfWeek})` : `${i}日前(${dateStr}${dayOfWeek})`;
+        const value = toLocalDateString(date);
         
         const checkboxLabel = document.createElement('label');
         checkboxLabel.className = 'checkbox-label';
         checkboxLabel.innerHTML = `
-            <input type="checkbox" class="date-filter" data-days-ago="${i}" checked>
+            <input type="checkbox" class="date-filter" data-days-ago="${i}" value="${value}" checked>
             <span>${label}</span>
         `;
         
@@ -77,8 +86,8 @@ async function init() {
         createDateFilters();
         await loadAllData();
         await loadCurrentData();
-        await loadEnergyData();  // ← 追加
-        await loadStatistics();  // ← この行を追加
+        await loadEnergyData();
+        await loadStatistics();
         updateCharts();
         
         document.getElementById('loading').style.display = 'none';
@@ -88,8 +97,8 @@ async function init() {
         setInterval(async () => {
             await loadAllData();
             await loadCurrentData();
-            await loadEnergyData();  // ← 追加
-            await loadStatistics();  // ← この行を追加
+            await loadEnergyData();
+            await loadStatistics();
             updateCharts();
         }, 5 * 60 * 1000);
         
@@ -267,6 +276,20 @@ async function loadStatistics() {
         console.error('Error loading statistics:', error);
     }
 }
+
+// 選択中の日付文字列を取得
+function getSelectedDateStrings() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return Array.from(document.querySelectorAll('.date-filter:checked')).map(cb => {
+        const daysAgo = Number(cb.dataset.daysAgo || 0);
+        const date = new Date(today);
+        date.setDate(date.getDate() - daysAgo);
+        return toLocalDateString(date);
+    });
+}
+
 // グラフ更新
 function updateCharts() {
     // チェックされた日付を取得
@@ -451,7 +474,7 @@ function updateCharts() {
         let min = Math.floor(dataMin);
         let max = Math.ceil(dataMax);
         
-        // 差が10℃未満なら、最大値を最小値+10℃に
+        // 差が10℃未満なら、最大値���最小値+10℃に
         if (max - min < 10) {
             max = min + 10;
         }
@@ -586,43 +609,30 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                     // 選択された日付を取得
-                const selectedCheckboxes = document.querySelectorAll('.date-filter:checked');
-                const selectedDates = [];
-                selectedCheckboxes.forEach(function(cb) {
-                    selectedDates.push(cb.value);
-                });
-// ★★★ デバッグログ ★★★
-console.log('選択された日付:', selectedDates);
-console.log('energyDataの日付:', energyData.map(function(row) { return row.date; }));
+                    const selectedDates = getSelectedDateStrings();
 
-                // 日付ごとにグループ化（選択された日付のみ）
-                const energyByDate = {};
-                energyData.forEach(function(row) {
-                    console.log('チェック中: ' + row.date + ', 含まれる? ' + selectedDates.includes(row.date));
-                    console.log('型:', typeof row.date, 'vs', typeof selectedDates[0]);
-                    console.log('完全一致?', row.date === selectedDates[1]);
-                     
-                    // 選択された日付のみを処理
-                    if (!selectedDates.includes(row.date)) {
-                        return;
-                    }
-                    
-                    if (!energyByDate[row.date]) {
-                        energyByDate[row.date] = [];
-                    }
-                    
-                    // 時刻を時間（小数）に変換
-                    const timeParts = row.time.split(':');
-                    const hours = parseInt(timeParts[0]);
-                    const minutes = parseInt(timeParts[1]);
-                    const timeInHours = hours + minutes / 60;
-                    
-                    energyByDate[row.date].push({
-                        x: timeInHours,
-                        y: row.consumption
+                    // 日付ごとにグループ化（選択された日付のみ）
+                    const energyByDate = {};
+                    energyData.forEach(function(row) {
+                        if (!selectedDates.includes(row.date)) {
+                            return;
+                        }
+                        
+                        if (!energyByDate[row.date]) {
+                            energyByDate[row.date] = [];
+                        }
+                        
+                        // 時刻を時間（小数）に変換
+                        const timeParts = row.time.split(':');
+                        const hours = parseInt(timeParts[0]);
+                        const minutes = parseInt(timeParts[1]);
+                        const timeInHours = hours + minutes / 60;
+                        
+                        energyByDate[row.date].push({
+                            x: timeInHours,
+                            y: row.consumption
+                        });
                     });
-                });
                     
                     // データセット作成
                     const energyDatasets = [];
