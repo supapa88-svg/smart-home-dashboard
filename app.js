@@ -604,18 +604,19 @@ function updateCharts() {
                     // データセット作成
                     const energyDatasets = [];
                     const dates = Object.keys(energyByDate).sort();
+
+                    // 日別の色を生成
+                    const colors = generateColorGradient(dates.length);
                     
                     dates.forEach((date, index) => {
-                        const daysAgo = dates.length - 1 - index;
-                        const opacity = 1.0 - (daysAgo * 0.12);
                         const dateObj = new Date(date + 'T00:00:00');
                         const dateLabel = `${dateObj.getMonth() + 1}/${dateObj.getDate()}${getDayOfWeek(dateObj)}`;
-                        
+
                         energyDatasets.push({
                             label: dateLabel,
                             data: energyByDate[date],
-                            backgroundColor: `rgba(255, 193, 7, ${opacity})`,
-                            borderColor: `rgba(255, 193, 7, ${opacity})`,
+                            backgroundColor: colors.background[index],
+                            borderColor: colors.border[index],
                             borderWidth: 1
                         });
                     });
@@ -812,4 +813,41 @@ function renderStatsTable(tableId, stats) {
     `;
 
     tbody.innerHTML = tempHtml + humidityHtml;
+}
+
+// 日別に暖色から寒色へのグラデーションカラーを生成
+function generateColorGradient(count) {
+    const background = [];
+    const border = [];
+    
+    // 暖色（赤・オレンジ）から寒色（青・紫）へのグラデーション
+    const colorStops = [
+        { r: 255, g: 99, b: 132 },   // 赤
+        { r: 255, g: 159, b: 64 },   // オレンジ
+        { r: 255, g: 205, b: 86 },   // 黄色
+        { r: 75, g: 192, b: 192 },   // ターコイズ
+        { r: 54, g: 162, b: 235 },   // 青
+        { r: 153, g: 102, b: 255 },  // 紫
+        { r: 201, g: 203, b: 207 }   // グレー
+    ];
+    
+    for (let i = 0; i < count; i++) {
+        // 色の位置を計算（0〜colorStops.length-1の範囲）
+        const position = (i / Math.max(count - 1, 1)) * (colorStops.length - 1);
+        const index = Math.floor(position);
+        const fraction = position - index;
+        
+        // 2つの色の間を補間
+        const startColor = colorStops[Math.min(index, colorStops.length - 1)];
+        const endColor = colorStops[Math.min(index + 1, colorStops.length - 1)];
+        
+        const r = Math.round(startColor.r + (endColor.r - startColor.r) * fraction);
+        const g = Math.round(startColor.g + (endColor.g - startColor.g) * fraction);
+        const b = Math.round(startColor.b + (endColor.b - startColor.b) * fraction);
+        
+        background.push(`rgba(${r}, ${g}, ${b}, 0.6)`);
+        border.push(`rgba(${r}, ${g}, ${b}, 1)`);
+    }
+    
+    return { background, border };
 }
