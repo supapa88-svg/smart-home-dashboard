@@ -851,3 +851,14 @@ function generateColorGradient(count) {
     
     return { background, border };
 }
+// 選択された日付のリストを取得
+function getSelectedDates() {
+    const dates = [];
+    const checkboxes = document.querySelectorAll('#date-filters input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        dates.push(checkbox.value);
+    });
+    
+    return dates;
+}
