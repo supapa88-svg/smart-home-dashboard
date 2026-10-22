@@ -602,34 +602,31 @@ function updateCharts() {
 console.log('選択された日付:', selectedDates);
 console.log('energyDataの日付:', energyData.map(function(row) { return row.date; }));
 
-// 日付ごとにグループ化（選択された日付のみ）
-const energyByDate = {};
-energyData.forEach(function(row) {
-    console.log('チェック中: ' + row.date + ', 含まれる? ' + selectedDates.includes(row.date));
-    
-    // 選択された日付のみを処理
-    if (!selectedDates.includes(row.date)) {
-        return;
-    }
-                    // 日付ごとにグループ化（選択された日付のみ）
-                    const energyByDate = {};
-                    energyData.forEach(row => {
-                        // 選択された日付のみを処理
-                        if (!selectedDates.includes(row.date)) {
-                            return;
-                        }
-    
-                        if (!energyByDate[row.date]) {
-                            energyByDate[row.date] = [];
-                        }
-                        // 時刻を時間（小数）に変換
-                        const [hours, minutes] = row.time.split(':').map(Number);
-                        const timeInHours = hours + minutes / 60;
-                        energyByDate[row.date].push({
-                            x: timeInHours,
-                            y: row.consumption
-                        });
+                // 日付ごとにグループ化（選択された日付のみ）
+                const energyByDate = {};
+                energyData.forEach(function(row) {
+                    console.log('チェック中: ' + row.date + ', 含まれる? ' + selectedDates.includes(row.date));
+                    
+                    // 選択された日付のみを処理
+                    if (!selectedDates.includes(row.date)) {
+                        return;
+                    }
+                    
+                    if (!energyByDate[row.date]) {
+                        energyByDate[row.date] = [];
+                    }
+                    
+                    // 時刻を時間（小数）に変換
+                    const timeParts = row.time.split(':');
+                    const hours = parseInt(timeParts[0]);
+                    const minutes = parseInt(timeParts[1]);
+                    const timeInHours = hours + minutes / 60;
+                    
+                    energyByDate[row.date].push({
+                        x: timeInHours,
+                        y: row.consumption
                     });
+                });
                     
                     // データセット作成
                     const energyDatasets = [];
