@@ -30,3 +30,4 @@ window.SUPABASE_CONFIG = {
 - `app.js`
 - `config.local.js`（ローカルのみ）
 - `casa_segura.png`（背景画像）
+- 
