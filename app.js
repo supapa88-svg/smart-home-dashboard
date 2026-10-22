@@ -78,6 +78,7 @@ async function init() {
         await loadAllData();
         await loadCurrentData();
         await loadEnergyData();  // ← 追加
+        await loadStatistics();  // ← この行を追加
         updateCharts();
         
         document.getElementById('loading').style.display = 'none';
@@ -88,6 +89,7 @@ async function init() {
             await loadAllData();
             await loadCurrentData();
             await loadEnergyData();  // ← 追加
+            await loadStatistics();  // ← この行を追加
             updateCharts();
         }, 5 * 60 * 1000);
         
@@ -205,14 +207,23 @@ async function loadEnergyData() {
 // 統計情報を計算・表示
 async function loadStatistics() {
     try {
+        console.log('loadStatistics called');  // ← 追加
+        console.log('allData:', allData);  // ← 追加
+        console.log('allData length:', allData ? allData.length : 0);  // ← 追加
+        
         // 室内・屋外の統計を計算（allDataを使用）
         if (allData && allData.length > 0) {
             const indoorStats = calculateDetailedStats(allData, 'indoor');
             const outdoorStats = calculateDetailedStats(allData, 'outdoor');
 
-            // テーブルに表示
+            console.log('indoorStats:', indoorStats);  // ← 追加
+            console.log('outdoorStats:', outdoorStats);  // ← 追加
+
+        // テーブルに表示
             renderStatsTable('indoor-stats-table', indoorStats);
             renderStatsTable('outdoor-stats-table', outdoorStats);
+        } else {
+            console.log('allData is empty or undefined');  // ← 追加
         }
 
         // 電力統計（既存のコード）
