@@ -586,18 +586,10 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                    // 選択された日付を取得
+                    // 選択された日付を取得（温度・湿度グラフと同じ方法）
                     const selectedCheckboxes = document.querySelectorAll('.date-filter:checked');
-                    const selectedDates = [];
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-
-                    selectedCheckboxes.forEach(cb => {
-                        const daysAgo = parseInt(cb.dataset.daysAgo);
-                        const targetDate = new Date(today);
-                        targetDate.setHours(0, 0, 0, 0);  // ← 追加
-                        targetDate.setDate(targetDate.getDate() - daysAgo);
-                        selectedDates.push(targetDate.toISOString().split('T')[0]);
+                    const selectedDates = Array.from(selectedCheckboxes).map(function(cb) {
+                        return cb.value;
                     });
 // ★★★ デバッグログ ★★★
 console.log('選択された日付:', selectedDates);
