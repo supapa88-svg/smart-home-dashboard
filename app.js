@@ -586,9 +586,27 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                    // 日付ごとにグループ化
+                    // 選択された日付を取得
+                    const selectedCheckboxes = document.querySelectorAll('.date-filter:checked');
+                    const selectedDates = [];
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    selectedCheckboxes.forEach(cb => {
+                        const daysAgo = parseInt(cb.dataset.daysAgo);
+                        const targetDate = new Date(today);
+                        targetDate.setDate(targetDate.getDate() - daysAgo);
+                        selectedDates.push(targetDate.toISOString().split('T')[0]);
+                    });
+
+                    // 日付ごとにグループ化（選択された日付のみ）
                     const energyByDate = {};
                     energyData.forEach(row => {
+                        // 選択された日付のみを処理
+                        if (!selectedDates.includes(row.date)) {
+                            return;
+                        }
+    
                         if (!energyByDate[row.date]) {
                             energyByDate[row.date] = [];
                         }
