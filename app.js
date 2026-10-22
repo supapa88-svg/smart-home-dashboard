@@ -595,6 +595,7 @@ function updateCharts() {
                     selectedCheckboxes.forEach(cb => {
                         const daysAgo = parseInt(cb.dataset.daysAgo);
                         const targetDate = new Date(today);
+                        targetDate.setHours(0, 0, 0, 0);  // ← 追加
                         targetDate.setDate(targetDate.getDate() - daysAgo);
                         selectedDates.push(targetDate.toISOString().split('T')[0]);
                     });
