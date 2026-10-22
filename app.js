@@ -474,7 +474,7 @@ function updateCharts() {
         let min = Math.floor(dataMin);
         let max = Math.ceil(dataMax);
         
-        // 差が10℃未満なら、最大値���最小値+10℃に
+        // 差が10℃未満なら、最大値を最小値+10℃に
         if (max - min < 10) {
             max = min + 10;
         }
@@ -591,7 +591,7 @@ function updateCharts() {
     const energyCtx = document.getElementById('energyChart')?.getContext('2d');
     
     if (energyCtx) {
-        // 7日分の電力データを取得
+        const selectedDates = getSelectedDateStrings();
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
@@ -609,8 +609,6 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                    const selectedDates = getSelectedDateStrings();
-
                     // 日付ごとにグループ化（選択された日付のみ）
                     const energyByDate = {};
                     energyData.forEach(function(row) {
@@ -634,9 +632,11 @@ function updateCharts() {
                         });
                     });
                     
+                    // 選択順に並べる（他のグラフと揃える）
+                    const dates = selectedDates.filter(date => energyByDate[date]);
+
                     // データセット作成
                     const energyDatasets = [];
-                    const dates = Object.keys(energyByDate).sort();
 
                     // 日別の色を生成
                     const colors = generateColorGradient(dates.length);
