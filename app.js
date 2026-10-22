@@ -37,9 +37,93 @@ function formatDateLabel(value) {
     return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-function formatTime(value) {
-    if (value === null || value === undefined) return '--';
-    return `${Number(value).toFixed(1)}`;
+function formatNumber(value, suffix = '') {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '読込み中...';
+    }
+    return `${Number(value).toFixed(1)}${suffix}`;
+}
+
+function calculateStats(values) {
+    const validValues = values
+        .filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)))
+        .map(value => Number(value));
+
+    if (validValues.length === 0) {
+        return { max: null, min: null, avg: null };
+    }
+
+    const max = Math.max(...validValues);
+    const min = Math.min(...validValues);
+    const avg = validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
+
+    return { max, min, avg };
+}
+
+function renderStatsTables() {
+    const indoorTable = document.getElementById('indoor-stats-table');
+    const outdoorTable = document.getElementById('outdoor-stats-table');
+
+    if (!indoorTable || !outdoorTable || dashboardRows.length === 0) {
+        return;
+    }
+
+    const indoorTempStats = calculateStats(dashboardRows.map(row => row.indoor_avg_temp));
+    const indoorHumidityStats = calculateStats(dashboardRows.map(row => row.indoor_avg_humidity));
+    const outdoorTempStats = calculateStats(dashboardRows.map(row => row.outdoor_avg_temp));
+    const outdoorHumidityStats = calculateStats(dashboardRows.map(row => row.outdoor_avg_humidity));
+
+    indoorTable.innerHTML = `
+        <tr>
+            <td class="label">おんど</td>
+            <td>${formatNumber(indoorTempStats.max, '°C')}</td>
+            <td>${formatNumber(indoorTempStats.min, '°C')}</td>
+            <td>${formatNumber(indoorTempStats.avg, '°C')}</td>
+        </tr>
+        <tr>
+            <td class="label">しつど</td>
+            <td>${formatNumber(indoorHumidityStats.max, '%')}</td>
+            <td>${formatNumber(indoorHumidityStats.min, '%')}</td>
+            <td>${formatNumber(indoorHumidityStats.avg, '%')}</td>
+        </tr>
+    `;
+
+    outdoorTable.innerHTML = `
+        <tr>
+            <td class="label">おんど</td>
+            <td>${formatNumber(outdoorTempStats.max, '°C')}</td>
+            <td>${formatNumber(outdoorTempStats.min, '°C')}</td>
+            <td>${formatNumber(outdoorTempStats.avg, '°C')}</td>
+        </tr>
+        <tr>
+            <td class="label">しつど</td>
+            <td>${formatNumber(outdoorHumidityStats.max, '%')}</td>
+            <td>${formatNumber(outdoorHumidityStats.min, '%')}</td>
+            <td>${formatNumber(outdoorHumidityStats.avg, '%')}</td>
+        </tr>
+    `;
+}
+
+function renderEnergyStats() {
+    const energyTotalEl = document.getElementById('stats-energy-total');
+    const energyAvgEl = document.getElementById('stats-energy-avg');
+    const energyMaxEl = document.getElementById('stats-energy-max');
+    const energyMinEl = document.getElementById('stats-energy-min');
+
+    if (!energyTotalEl || !energyAvgEl || !energyMaxEl || !energyMinEl || energyRows.length === 0) {
+        return;
+    }
+
+    const totals = energyRows.map(row => Number(row.total_kwh)).filter(value => Number.isFinite(value));
+    const total = totals.reduce((sum, value) => sum + value, 0);
+    const avg = totals.length ? total / totals.length : null;
+    const max = totals.length ? Math.max(...totals) : null;
+    const min = totals.length ? Math.min(...totals) : null;
+
+    energyTotalEl.textContent = formatNumber(total, ' kWh');
+    energyAvgEl.textContent = formatNumber(avg, ' kWh');
+    energyMaxEl.textContent = formatNumber(max, ' kWh');
+    energyMinEl.textContent = formatNumber(min, ' kWh');
 }
 
 async function init() {
@@ -52,6 +136,8 @@ async function init() {
         await loadDashboardSummary();
         await loadEnergySummary();
         renderLatestValues();
+        renderStatsTables();
+        renderEnergyStats();
         renderCharts();
 
         if (document.getElementById('loading')) {
