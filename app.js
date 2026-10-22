@@ -586,11 +586,12 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                    // 選択された日付を取得（温度・湿度グラフと同じ方法）
-                    const selectedCheckboxes = document.querySelectorAll('.date-filter:checked');
-                    const selectedDates = Array.from(selectedCheckboxes).map(function(cb) {
-                        return cb.value;
-                    });
+                     // 選択された日付を取得
+                const selectedCheckboxes = document.querySelectorAll('.date-filter:checked');
+                const selectedDates = [];
+                selectedCheckboxes.forEach(function(cb) {
+                    selectedDates.push(cb.value);
+                });
 // ★★★ デバッグログ ★★★
 console.log('選択された日付:', selectedDates);
 console.log('energyDataの日付:', energyData.map(function(row) { return row.date; }));
