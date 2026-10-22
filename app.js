@@ -598,7 +598,19 @@ function updateCharts() {
                         targetDate.setDate(targetDate.getDate() - daysAgo);
                         selectedDates.push(targetDate.toISOString().split('T')[0]);
                     });
+// ★★★ デバッグログ ★★★
+console.log('選択された日付:', selectedDates);
+console.log('energyDataの日付:', energyData.map(row => row.date));
 
+// 日付ごとにグループ化（選択された日付のみ）
+const energyByDate = {};
+energyData.forEach(row => {
+    console.log(`チェック中: ${row.date}, 含まれる? ${selectedDates.includes(row.date)}`);
+    
+    // 選択された日付のみを処理
+    if (!selectedDates.includes(row.date)) {
+        return;
+    }
                     // 日付ごとにグループ化（選択された日付のみ）
                     const energyByDate = {};
                     energyData.forEach(row => {
