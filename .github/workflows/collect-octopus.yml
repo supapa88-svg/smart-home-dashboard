@@ -29,4 +29,5 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           OCTOPUS_EMAIL: ${{ secrets.OCTOPUS_EMAIL }}
           OCTOPUS_PASSWORD: ${{ secrets.OCTOPUS_PASSWORD }}
-        run: python jobs/collect_octopus.py
+        run: python -m jobs.collect_octopus
+
