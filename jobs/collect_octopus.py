@@ -140,8 +140,7 @@ def save_to_supabase(readings: list[dict]) -> None:
         )
 
     (
-        supabase.schema("private")
-        .table("energy_data_raw")
+        supabase.table("energy_data_raw")
         .upsert(rows, on_conflict="source,start_at")
         .execute()
     )
