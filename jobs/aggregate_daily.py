@@ -23,8 +23,7 @@ def load_sensor_rows(supabase, from_day: str, to_day: str):
     from_ts = f"{from_day}T00:00:00+00:00"
     to_ts = f"{to_day}T23:59:59+00:00"
     res = (
-        supabase.schema("private")
-        .table("sensor_data_raw")
+        supabase.table("sensor_data_raw")
         .select("measured_at,indoor_temp,indoor_humidity,outdoor_temp,outdoor_humidity")
         .gte("measured_at", from_ts)
         .lte("measured_at", to_ts)
@@ -35,8 +34,7 @@ def load_sensor_rows(supabase, from_day: str, to_day: str):
 
 def load_energy_rows(supabase, from_day: str, to_day: str):
     res = (
-        supabase.schema("private")
-        .table("energy_data_raw")
+        supabase.table("energy_data_raw")
         .select("reading_date,consumption_kwh")
         .gte("reading_date", from_day)
         .lte("reading_date", to_day)
