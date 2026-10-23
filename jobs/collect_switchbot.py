@@ -132,7 +132,6 @@ def save_to_supabase(sensor_data: dict | None) -> None:
 
     (
         supabase.table("sensor_data_raw")
-        .table("sensor_data_raw")
         .insert(payload)
         .execute()
     )
