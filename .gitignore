@@ -2,3 +2,5 @@ config.local.js
 .env
 .env.*
 node_modules
+!.env.example
+apps/dashboard/config.local.js
