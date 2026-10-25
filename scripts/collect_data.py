@@ -123,8 +123,8 @@ def save_to_supabase(sensor_data):
         'raw': sensor_data,
     }
 
-supabase.table('sensor_data_raw').insert(payload).execute()
-print(f"Saved SwitchBot sensor data: {sensor_data}")
+    supabase.table('sensor_data_raw').insert(payload).execute()
+    print(f"Saved SwitchBot sensor data: {sensor_data}")
 
 
 if __name__ == '__main__':
