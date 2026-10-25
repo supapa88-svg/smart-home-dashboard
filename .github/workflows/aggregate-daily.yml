@@ -3,8 +3,8 @@ name: Aggregate Daily Summary
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 * * * *" # hourly at :15 (UTC)
-
+    - cron: "*/5 * * * *"
+    
 jobs:
   aggregate:
     runs-on: ubuntu-latest
