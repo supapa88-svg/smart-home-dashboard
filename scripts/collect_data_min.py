@@ -82,14 +82,17 @@ def collect():
     return data
 
 def save(row):
-    # テーブル列に存在する項目だけ送る
+    from datetime import datetime, timezone
+
     payload = {
+        "measured_at": datetime.now(timezone.utc).isoformat(),  # ← これが必須
         "source": row.get("source"),
         "indoor_temp": row.get("indoor_temp"),
         "indoor_humidity": row.get("indoor_humidity"),
         "outdoor_temp": row.get("outdoor_temp"),
         "outdoor_humidity": row.get("outdoor_humidity"),
     }
+
     supabase.table("sensor_data_raw").insert(payload).execute()
     print("Saved:", payload)
 
