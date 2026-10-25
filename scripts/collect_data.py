@@ -114,7 +114,7 @@ def save_to_supabase(sensor_data):
         return
 
     payload = {
-        'owner_id': SYSTEM_OWNER_ID,
+        #'owner_id': SYSTEM_OWNER_ID,
         'source': 'switchbot',
         'indoor_temp': sensor_data.get('indoor_temp'),
         'indoor_humidity': sensor_data.get('indoor_humidity'),
