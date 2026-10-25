@@ -2,6 +2,8 @@ name: Collect Octopus Energy Data
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "5 * * * *" # hourly at :05 (UTC)
 
 jobs:
   collect:
@@ -30,4 +32,3 @@ jobs:
           OCTOPUS_EMAIL: ${{ secrets.OCTOPUS_EMAIL }}
           OCTOPUS_PASSWORD: ${{ secrets.OCTOPUS_PASSWORD }}
         run: python -m jobs.collect_octopus
-
