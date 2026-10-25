@@ -2,6 +2,8 @@ name: Collect SwitchBot Data
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes (UTC)
 
 jobs:
   collect:
