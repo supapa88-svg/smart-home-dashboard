@@ -3,7 +3,7 @@ import time
 import hashlib
 import hmac
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from supabase import create_client
@@ -114,18 +114,16 @@ def save_to_supabase(sensor_data):
         return
 
     payload = {
-        #'owner_id': SYSTEM_OWNER_ID,
+        'measured_at': datetime.now(timezone.utc).isoformat(),
         'source': 'switchbot',
         'indoor_temp': sensor_data.get('indoor_temp'),
         'indoor_humidity': sensor_data.get('indoor_humidity'),
         'outdoor_temp': sensor_data.get('outdoor_temp'),
         'outdoor_humidity': sensor_data.get('outdoor_humidity'),
-        'raw': sensor_data,
     }
 
     supabase.table('sensor_data_raw').insert(payload).execute()
     print(f"Saved SwitchBot sensor data: {sensor_data}")
-
 
 if __name__ == '__main__':
     print(f'Starting SwitchBot collection at {datetime.now()}')
