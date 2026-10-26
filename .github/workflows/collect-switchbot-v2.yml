@@ -38,5 +38,4 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SWITCHBOT_TOKEN: ${{ secrets.SWITCHBOT_TOKEN }}
           SWITCHBOT_SECRET: ${{ secrets.SWITCHBOT_SECRET }}
-        run: python scripts/collect_data_min.py
-        
+        run: python scripts/collect_data.py        
