@@ -1,4 +1,0 @@
-name: Collect Smart Home Data (disabled)
-
-on:
-  workflow_dispatch:
