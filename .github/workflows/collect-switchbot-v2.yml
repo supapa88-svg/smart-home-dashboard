@@ -1,9 +1,6 @@
 name: Collect SwitchBot Data v2
 
 on:
-  schedule:
-    # 毎時 07,22,37,52 分（00分台の混雑を避ける）
-    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 permissions:
