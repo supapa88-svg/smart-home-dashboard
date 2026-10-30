@@ -256,20 +256,35 @@ async function loadStatistics() {
                 const total = totals.reduce((a, b) => a + b, 0);
                 const avg = total / totals.length;
                 const max = Math.max(...totals);
-                const min = Math.min(...totals);
 
                 const maxDate = dates[totals.indexOf(max)];
-                const minDate = dates[totals.indexOf(min)];
                 const maxDateObj = new Date(maxDate + 'T00:00:00');
-                const minDateObj = new Date(minDate + 'T00:00:00');
 
                 const maxLabel = `${maxDateObj.getMonth() + 1}/${maxDateObj.getDate()}${getDayOfWeek(maxDateObj)}`;
-                const minLabel = `${minDateObj.getMonth() + 1}/${minDateObj.getDate()}${getDayOfWeek(minDateObj)}`;
+                const todayParts = Object.fromEntries(new Intl.DateTimeFormat('en', {
+                    timeZone: 'Asia/Tokyo',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).formatToParts(new Date()).map(part => [part.type, part.value]));
+                const todayJst = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
+                const completedDayTotals = Object.entries(dailyTotals)
+                    .filter(([date]) => date < todayJst);
+                const minEntry = completedDayTotals.length
+                    ? completedDayTotals.reduce((min, entry) => entry[1] < min[1] ? entry : min)
+                    : null;
 
                 document.getElementById('stats-energy-total').textContent = `${total.toFixed(1)} kWh`;
                 document.getElementById('stats-energy-avg').textContent = `${avg.toFixed(1)} kWh`;
                 document.getElementById('stats-energy-max').textContent = `${max.toFixed(1)} kWh (${maxLabel})`;
-                document.getElementById('stats-energy-min').textContent = `${min.toFixed(1)} kWh (${minLabel})`;
+                if (minEntry) {
+                    const [minDate, min] = minEntry;
+                    const minDateObj = new Date(minDate + 'T00:00:00');
+                    const minLabel = `${minDateObj.getMonth() + 1}/${minDateObj.getDate()}${getDayOfWeek(minDateObj)}`;
+                    document.getElementById('stats-energy-min').textContent = `${min.toFixed(1)} kWh (${minLabel})`;
+                } else {
+                    document.getElementById('stats-energy-min').textContent = '--';
+                }
             }
         }
 
