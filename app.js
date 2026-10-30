@@ -610,7 +610,7 @@ function updateCharts() {
                 }
                 
                 if (energyData && energyData.length > 0) {
-                    // 日付ごとにグループ化（選択された日付のみ）
+                    // 日付ごと・時間ごとに集計（選択された日付のみ）
                     const energyByDate = {};
                     energyData.forEach(function(row) {
                         if (!selectedDates.includes(row.date)) {
@@ -618,19 +618,15 @@ function updateCharts() {
                         }
                         
                         if (!energyByDate[row.date]) {
-                            energyByDate[row.date] = [];
+                            energyByDate[row.date] = Array(24).fill(null);
                         }
                         
-                        // 時刻を時間（小数）に変換
-                        const timeParts = row.time.split(':');
-                        const hours = parseInt(timeParts[0]);
-                        const minutes = parseInt(timeParts[1]);
-                        const timeInHours = hours + minutes / 60;
-                        
-                        energyByDate[row.date].push({
-                            x: timeInHours,
-                            y: row.consumption
-                        });
+                        const hour = Number(row.time.split(':')[0]);
+                        const consumption = Number(row.consumption);
+                        if (Number.isInteger(hour) && hour >= 0 && hour < 24 && Number.isFinite(consumption)) {
+                            energyByDate[row.date][hour] =
+                                (energyByDate[row.date][hour] ?? 0) + consumption;
+                        }
                     });
                     
                     // 選択順に並べる（他のグラフと揃える）
@@ -662,7 +658,12 @@ function updateCharts() {
                     
                     window.energyChart = new Chart(energyCtx, {
                         type: 'bar',
-                        data: { datasets: energyDatasets },
+                        data: {
+                            labels: Array.from({ length: 24 }, (_, hour) =>
+                                `${hour.toString().padStart(2, '0')}:00`
+                            ),
+                            datasets: energyDatasets
+                        },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
@@ -680,29 +681,17 @@ function updateCharts() {
                                     yAlign: 'bottom',
                                     callbacks: {
                                         title: function(context) {
-                                            // x値（時刻の小数）をHH:MM形式に変換
-                                            const timeValue = context[0].parsed.x;
-                                            const hours = Math.floor(timeValue);
-                                            const minutes = Math.round((timeValue - hours) * 60);
-                                            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                                            return context[0].label;
                                         },
                                         label: function(context) {
-                                            return `${context.dataset.label}: ${context.parsed.y} kWh`;
+                                            return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} kWh`;
                                         }
                                     }
                                 }
                             },
                             scales: {
                                 x: {
-                                    type: 'linear',
-                                    min: 0,
-                                    max: 24,
-                                    ticks: {
-                                        stepSize: 1,
-                                        callback: function(value) {
-                                            return value.toString().padStart(2, '0') + ':00';
-                                        }
-                                    },
+                                    type: 'category',
                                     title: {
                                         display: true,
                                         text: '時刻'
