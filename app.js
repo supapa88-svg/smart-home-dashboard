@@ -254,7 +254,6 @@ async function loadStatistics() {
 
             if (totals.length > 0) {
                 const total = totals.reduce((a, b) => a + b, 0);
-                const avg = total / totals.length;
                 const max = Math.max(...totals);
 
                 const maxDate = dates[totals.indexOf(max)];
@@ -270,12 +269,17 @@ async function loadStatistics() {
                 const todayJst = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
                 const completedDayTotals = Object.entries(dailyTotals)
                     .filter(([date]) => date < todayJst);
+                const completedDayAverage = completedDayTotals.length
+                    ? completedDayTotals.reduce((sum, entry) => sum + entry[1], 0) / completedDayTotals.length
+                    : null;
                 const minEntry = completedDayTotals.length
                     ? completedDayTotals.reduce((min, entry) => entry[1] < min[1] ? entry : min)
                     : null;
 
                 document.getElementById('stats-energy-total').textContent = `${total.toFixed(1)} kWh`;
-                document.getElementById('stats-energy-avg').textContent = `${avg.toFixed(1)} kWh`;
+                document.getElementById('stats-energy-avg').textContent = completedDayAverage === null
+                    ? '--'
+                    : `${completedDayAverage.toFixed(1)} kWh`;
                 document.getElementById('stats-energy-max').textContent = `${max.toFixed(1)} kWh (${maxLabel})`;
                 if (minEntry) {
                     const [minDate, min] = minEntry;
