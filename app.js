@@ -12,6 +12,8 @@ let dashboardRows = [];
 let energyRows = [];
 let tempChart = null;
 let humidityChart = null;
+let energyChart = null;
+let selectedDates = new Set();
 
 function setStatus(message) {
     const statusEl = document.getElementById('loading');
@@ -53,6 +55,7 @@ async function init() {
         await loadEnergySummary();
         renderLatestValues();
         renderStats();
+        initFilters();
         renderCharts();
 
         if (document.getElementById('loading')) {
@@ -169,12 +172,51 @@ function renderStats() {
     setText('stats-energy-min', energy?.min);
 }
 
+function initFilters() {
+    const container = document.getElementById('dateFilters');
+    if (container) {
+        const dates = [...dashboardRows].reverse().map(r => r.summary_date);
+        selectedDates = new Set(dates);
+        container.innerHTML = '';
+        dates.forEach(date => {
+            const label = document.createElement('label');
+            label.className = 'checkbox-label';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = true;
+            input.addEventListener('change', () => {
+                if (input.checked) selectedDates.add(date);
+                else selectedDates.delete(date);
+                renderCharts();
+            });
+            const span = document.createElement('span');
+            span.textContent = formatDateLabel(date);
+            label.append(input, span);
+            container.appendChild(label);
+        });
+    }
+
+    ['filterIndoor', 'filterOutdoor'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', renderCharts);
+    });
+}
+
+function visibleRows() {
+    return [...dashboardRows].reverse().filter(r => selectedDates.has(r.summary_date));
+}
+
+function isChecked(id) {
+    const el = document.getElementById(id);
+    return el ? el.checked : true;
+}
+
 function renderCharts() {
     const tempCanvas = document.getElementById('tempChart');
     if (tempCanvas && window.Chart) {
-        const labels = [...dashboardRows].reverse().map(row => formatDateLabel(row.summary_date));
-        const tempData = [...dashboardRows].reverse().map(row => row.indoor_avg_temp ?? null);
-        const outdoorData = [...dashboardRows].reverse().map(row => row.outdoor_avg_temp ?? null);
+        const labels = visibleRows().map(row => formatDateLabel(row.summary_date));
+        const tempData = visibleRows().map(row => row.indoor_avg_temp ?? null);
+        const outdoorData = visibleRows().map(row => row.outdoor_avg_temp ?? null);
 
         if (tempChart) tempChart.destroy();
         tempChart = new Chart(tempCanvas.getContext('2d'), {
@@ -184,6 +226,7 @@ function renderCharts() {
                 datasets: [
                     {
                         label: '室内',
+                        hidden: !isChecked('filterIndoor'),
                         data: tempData,
                         borderColor: '#ff6384',
                         backgroundColor: 'rgba(255, 99, 132, 0.1)',
@@ -192,6 +235,7 @@ function renderCharts() {
                     },
                     {
                         label: '屋外',
+                        hidden: !isChecked('filterOutdoor'),
                         data: outdoorData,
                         borderColor: '#36a2eb',
                         backgroundColor: 'rgba(54, 162, 235, 0.1)',
@@ -217,9 +261,9 @@ function renderCharts() {
 
     const humidityCanvas = document.getElementById('humidityChart');
     if (humidityCanvas && window.Chart) {
-        const labels = [...dashboardRows].reverse().map(row => formatDateLabel(row.summary_date));
-        const indoorData = [...dashboardRows].reverse().map(row => row.indoor_avg_humidity ?? null);
-        const outdoorData = [...dashboardRows].reverse().map(row => row.outdoor_avg_humidity ?? null);
+        const labels = visibleRows().map(row => formatDateLabel(row.summary_date));
+        const indoorData = visibleRows().map(row => row.indoor_avg_humidity ?? null);
+        const outdoorData = visibleRows().map(row => row.outdoor_avg_humidity ?? null);
 
         if (humidityChart) humidityChart.destroy();
         humidityChart = new Chart(humidityCanvas.getContext('2d'), {
@@ -229,6 +273,7 @@ function renderCharts() {
                 datasets: [
                     {
                         label: '室内',
+                        hidden: !isChecked('filterIndoor'),
                         data: indoorData,
                         borderColor: '#ff6384',
                         backgroundColor: 'rgba(255, 99, 132, 0.1)',
@@ -237,6 +282,7 @@ function renderCharts() {
                     },
                     {
                         label: '屋外',
+                        hidden: !isChecked('filterOutdoor'),
                         data: outdoorData,
                         borderColor: '#36a2eb',
                         backgroundColor: 'rgba(54, 162, 235, 0.1)',
@@ -255,6 +301,35 @@ function renderCharts() {
                         ticks: {
                             callback: (value) => `${value}%`
                         }
+                    }
+                }
+            }
+        });
+    }
+
+    const energyCanvas = document.getElementById('energyChart');
+    if (energyCanvas && window.Chart) {
+        const rows = [...energyRows].reverse().slice(-7).filter(r => selectedDates.has(r.summary_date));
+        if (energyChart) energyChart.destroy();
+        energyChart = new Chart(energyCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: rows.map(r => formatDateLabel(r.summary_date)),
+                datasets: [{
+                    label: '消費電力量 (kWh)',
+                    data: rows.map(r => r.total_kwh ?? null),
+                    backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                    borderColor: '#ff9f40',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: (value) => `${value} kWh` }
                     }
                 }
             }
