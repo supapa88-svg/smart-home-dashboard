@@ -52,6 +52,7 @@ async function init() {
         await loadDashboardSummary();
         await loadEnergySummary();
         renderLatestValues();
+        renderStats();
         renderCharts();
 
         if (document.getElementById('loading')) {
@@ -124,6 +125,48 @@ function renderLatestValues() {
         const yesterday = energyRows[1];
         yesterdayEnergyEl.textContent = yesterday && yesterday.total_kwh !== null ? `${Number(yesterday.total_kwh).toFixed(1)} kWh` : '--';
     }
+}
+
+function summarize(values) {
+    const nums = values.filter(v => v !== null && v !== undefined).map(Number);
+    if (!nums.length) return null;
+    return {
+        max: Math.max(...nums),
+        min: Math.min(...nums),
+        avg: nums.reduce((a, b) => a + b, 0) / nums.length
+    };
+}
+
+function statsRowHtml(label, stats, unit) {
+    const cell = (v) => `<td>${v === undefined ? '--' : v.toFixed(1) + unit}</td>`;
+    return `<tr><td class="label">${label}</td>${cell(stats?.max)}${cell(stats?.min)}${cell(stats?.avg)}</tr>`;
+}
+
+function renderStats() {
+    const tables = {
+        'indoor-stats-table': ['indoor_avg_temp', 'indoor_avg_humidity'],
+        'outdoor-stats-table': ['outdoor_avg_temp', 'outdoor_avg_humidity']
+    };
+
+    Object.entries(tables).forEach(([id, [tempKey, humidityKey]]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const temp = summarize(dashboardRows.map(r => r[tempKey]));
+        const humidity = summarize(dashboardRows.map(r => r[humidityKey]));
+        el.innerHTML = statsRowHtml('おんど', temp, '°C') + statsRowHtml('しつど', humidity, '%');
+    });
+
+    const recent = energyRows.slice(0, 7).map(r => r.total_kwh);
+    const energy = summarize(recent);
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value === null || value === undefined ? '--' : `${value.toFixed(1)} kWh`;
+    };
+    const nums = recent.filter(v => v !== null && v !== undefined).map(Number);
+    setText('stats-energy-total', nums.length ? nums.reduce((a, b) => a + b, 0) : null);
+    setText('stats-energy-avg', energy?.avg);
+    setText('stats-energy-max', energy?.max);
+    setText('stats-energy-min', energy?.min);
 }
 
 function renderCharts() {
