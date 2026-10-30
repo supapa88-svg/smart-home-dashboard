@@ -3,7 +3,7 @@ name: Aggregate Daily Summary
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "15 * * * *" # hourly at :15 (UTC)
     
 jobs:
   aggregate:
