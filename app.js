@@ -69,7 +69,7 @@ async function init() {
 
 async function loadDashboardSummary() {
     const { data, error } = await supabaseClient
-        .from('dashboard_summary')
+        .from('dashboard_summary_daily')
         .select('*')
         .order('summary_date', { ascending: false })
         .limit(7);
@@ -80,7 +80,7 @@ async function loadDashboardSummary() {
 
 async function loadEnergySummary() {
     const { data, error } = await supabaseClient
-        .from('energy_summary')
+        .from('energy_summary_daily')
         .select('*')
         .order('summary_date', { ascending: false })
         .limit(14);
